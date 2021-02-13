@@ -1,0 +1,15 @@
+Hey my friend, Commands I have for now:
+!@isthebest <name>
+!@number <your number>
+!@match <name1> <age1> <or any other attributes> <name2> <age2> <or any other attributes>
+!@happy-birthday <name>
+Thanks to Artur,Aman(they are real sweet hearts)
+v0.01
+https://github.com/ar2rworld/ArturBot/blob/master/index.js
+Artur DELETED THE SERVER SO it does not have all the functionality
+updated functionality:
+!@changeAva
+!@isTheBest <name>
+!@number //Guess my number in range of [0, 99]
+->!@number <your number> //replies you if number is bigger or smaller
+->!@number new //new game
