@@ -1,9 +1,9 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
 const config = require('./config.json');
-const fs = require('fs'); //readFile function 
-var StringBuilder = require('stringbuilder');
-
+//const fs = require('fs'); //readFile function 
+//var StringBuilder = require('stringbuilder');
+var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 /*Used methods:*/
 const getASCIIsum = (s) =>{
   return s.toLowerCase().split('').reduce( (t, c) => t + c.charCodeAt(0),0);
@@ -30,9 +30,9 @@ const readFile = (f) =>{
   });
   //var sb = new StringBuilder();
   var sb = ['1'];
+  let out =[];
   readable.on('readable', function() {
     var chunk;
-    var out =[];
     console.log('sb in readable: ' + sb);
     while (null !== (chunk = readable.read(1) )) {
       if(chunk == '\n'){
@@ -42,14 +42,32 @@ const readFile = (f) =>{
         //console.log(chunk);
       }
     }
-    return out;
+    console.log("in listener:\n" + out.join(''));
   });
-  console.log('sb: ' + sb);
-  console.log(sb.join(''));
+  console.log(out.join(''));
   return sb.join('');//sb.build();
 }
 */
-
+//let help = readFile('help.txt');
+function readFileFromWebsite(url){
+  return new Promise(resolve =>{
+    let xhr = new XMLHttpRequest();
+    xhr.open('GET', url);
+    xhr.responseType = "text";
+    xhr.send();
+    var out = "Error occured while loading file from: '" + url + "'";
+    xhr.onload = function() {
+      if (xhr.status != 200) { // analyze HTTP status of the response
+        console.log(`Error ${xhr.status}: ${xhr.statusText}`); // e.g. 404: Not Found
+      } else { // show the result
+        console.log(`${xhr.responseText}`); // response is the server response
+        out = xhr.responseText;
+        return out;
+      }
+    };
+    return out;
+    });
+}
 /*Main functionality*/
 //number game variables:
 let gameStatus = false;
@@ -58,9 +76,8 @@ let attempts = 0;
 
 //bot vars
 const prefix = '!@';
-const help = "Hey my friend, Commands I have for now:\n!@isthebest <name>\n!@number <your number>\n!@match <name1> <age1> <or any other attributes> <name2> <age2> <or any other attributes>\n!@happy-birthday <name>\nThanks to Artur,Aman(they are real sweet hearts)\nv0.01\nhttps://github.com/ar2rworld/ArturBot/blob/master/index.js\n\n\nArtur DELETE THE SERVER SO it does not have all the functionality\nupdated functionality:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game";
-
-//let help = readFile('help.txt');
+const helpC = "Hey my friend, Commands I have for now:\n!@isthebest <name>\n!@number <your number>\n!@match <name1> <age1> <or any other attributes> <name2> <age2> <or any other attributes>\n!@happy-birthday <name>\nThanks to Artur,Aman(they are real sweet hearts)\nv0.01\nhttps://github.com/ar2rworld/ArturBot/blob/master/index.js\n\n\nArtur DELETE THE SERVER SO it does not have all the functionality\nupdated functionality:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game";
+const help = readFileFromWebsite('https://raw.githubusercontent.com/ar2rworld/ArturBot/master/help.txt');
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
