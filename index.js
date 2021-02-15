@@ -4,70 +4,17 @@ const config = require('./config.json');
 //const fs = require('fs'); //readFile function 
 //var StringBuilder = require('stringbuilder');
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+
+//Notes:
+//Issue 2: promise request from any website, some attempts in readFileStuff.js 
+//
+
+
 /*Used methods:*/
 const getASCIIsum = (s) =>{
   return s.toLowerCase().split('').reduce( (t, c) => t + c.charCodeAt(0),0);
 }
-/*const readFile = (file) => {
-  var output = "";
-  fs.readFile(file,(err, data) => { 
-    if (err) throw err;
-    temp = data.toString().split('\n');
-    var i=0;
-    for(i=0; i<temp.length; i+=1){
-      output += temp[i] + "\n";
-    }
-    //output = data.toString();
-  });
-  console.log(output);
-  return output;
-}*/
-/*
-const readFile = (f) =>{
-  var readable = fs.createReadStream(f, {
-    encoding: 'utf8',
-    fd: null,
-  });
-  //var sb = new StringBuilder();
-  var sb = ['1'];
-  let out =[];
-  readable.on('readable', function() {
-    var chunk;
-    console.log('sb in readable: ' + sb);
-    while (null !== (chunk = readable.read(1) )) {
-      if(chunk == '\n'){
-        out.push("\n"); //sb.append("\n");
-      }else{
-        out.push(chunk);
-        //console.log(chunk);
-      }
-    }
-    console.log("in listener:\n" + out.join(''));
-  });
-  console.log(out.join(''));
-  return sb.join('');//sb.build();
-}
-*/
-//let help = readFile('help.txt');
-function readFileFromWebsite(url){
-  return new Promise(resolve =>{
-    let xhr = new XMLHttpRequest();
-    xhr.open('GET', url);
-    xhr.responseType = "text";
-    xhr.send();
-    var out = "Error occured while loading file from: '" + url + "'";
-    xhr.onload = function() {
-      if (xhr.status != 200) { // analyze HTTP status of the response
-        console.log(`Error ${xhr.status}: ${xhr.statusText}`); // e.g. 404: Not Found
-      } else { // show the result
-        console.log(`${xhr.responseText}`); // response is the server response
-        out = xhr.responseText;
-        return out;
-      }
-    };
-    return out;
-    });
-}
+
 /*Main functionality*/
 //number game variables:
 let gameStatus = false;
@@ -76,12 +23,14 @@ let attempts = 0;
 
 //bot vars
 const prefix = '!@';
-const helpC = "Hey my friend, Commands I have for now:\n!@isthebest <name>\n!@number <your number>\n!@match <name1> <age1> <or any other attributes> <name2> <age2> <or any other attributes>\n!@happy-birthday <name>\nThanks to Artur,Aman(they are real sweet hearts)\nv0.01\nhttps://github.com/ar2rworld/ArturBot/blob/master/index.js\n\n\nArtur DELETE THE SERVER SO it does not have all the functionality\nupdated functionality:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game";
-const help = readFileFromWebsite('https://raw.githubusercontent.com/ar2rworld/ArturBot/master/help.txt');
+let help = "Hey my friend, Commands I have for now:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game\n!@match <name1> <name2> [any optinal args]\n!@happy-birthday <name>\nv0.02\n\nThanks to Artur,Aman(they are real sweet hearts)\nhttps://github.com/ar2rworld/ArturBot/blob/master/index.js\n\n\n";
+
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
+  console.log(help);
 });
-//console.log("Hmmm, My reseach showed that you are on " + "33" + "% best" + (true === true?"22":". Congrats!"));
+
+
 client.on('message', msg => { 
   const inp = msg.content.toLowerCase();
   if(inp.startsWith(prefix)){ 
@@ -92,10 +41,10 @@ client.on('message', msg => {
     }else if(inp.indexOf('isthebest')>0){
       const tempInp = inp.split(' ');
       if(tempInp.length === 2){
-        const val = getASCIIsum(tempInp[1]) % 100;
+        const val = getASCIIsum(tempInp[1]) % 101;
         let ext = "";
         ext = "I'm so sorry, my friend, but you suck 	(͡ ° ͜ʖ ͡ °) ."; 
-        msg.reply("Hmmm, My reseach showed that you are on " + val + "% best" + (val < 10 ? ext:". Congrats!"));
+        msg.reply("Hmmm, My reseach showed that you are on " + val + "% best" + (val > 10 ? val === 100? ".OMG, you are an absolute king" : ". Congrats!": ext));
       }else{
         msg.reply("My dear, can you please use exactly one argument for this command? Check out help: "+ prefix + "help");
       }
@@ -133,7 +82,23 @@ client.on('message', msg => {
         gameStatus = true;
         msg.reply("Game started, enter !@number <your number>\nI will say if it is bigger or smaller\nrange(0, 99)");
       }
-    }
+    }else if(inp.indexOf("match")>0){
+      if(inp.split(" ").length > 2){
+        const val = getASCIIsum(inp.split(" ").slice(1).join("")) % 100;
+        msg.reply((val > 35?"OH, You guys have a chance of " + val + "%." : "Sorry, you chances as low as " + val + "% but never give up!")); 
+      }else{
+        msg.reply("Oh brother/sister/both, can you please provide me at least two arguments: !@match <name1> <name2> ...");
+      }
+    }else if(inp.indexOf("happy-birthday")>0){
+      //https://www.youtube.com/watch?v=ORCqbKG4Z0M
+      const temp = inp.split(" ");
+      if(temp.length === 2){
+        msg.reply("I would like to say HAPPY BIRTHDAY TO " + temp[1] + "\nAnd wish him/her all the best, \"You don't have to be ruled ty fate. You can choose freedom.\" @Castiel supernatural.\nThis song is for you:\nhttps://www.youtube.com/watch?v=ORCqbKG4Z0M");
+      }else{
+        msg.reply("Invalid input: !@happy-birthday <name>");
+      }
+    }//next command
+    
   }
 
   
