@@ -28,6 +28,8 @@ let help = "Hey my friend, Commands I have for now:\n!@changeAva\n!@isTheBest <n
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
   console.log(help);
+  client.user.setActivity("!@help", {type : "PLAYING"}).then(p => console.log("Activity set to " + p.activities[0].name));
+  //console.log(client.guilds.cache.get("736262572076040322").members);
 });
 
 
@@ -100,9 +102,26 @@ client.on('message', msg => {
     }//next command
     
   }
+  //console.log("msg.cont" + msg.content + "  " + msg.client.user.id  + " " +  client.user.id);
+  if(msg.channel.type === "text" && !msg.author.equals(client.user)){
+    //console.log(msg.author.id + " " + msg.author.discriminator + " "); 
+    const mentionedIDs = msg.mentions.members.array();
+    let out = "Sorry, but user" + (mentionedIDs.length==1 ? "" : "s") + ": ";
+    for(let i=0; i < mentionedIDs.length; i+=1){
+      const tPresence = mentionedIDs[i].user.presence;
+      out += mentionedIDs[i].user.username + " is "+ (tPresence.activities.length ? tPresence.activities[0].type + " " + tPresence.activities[0].name : tPresence.status) + (i==mentionedIDs.length-1 ? "" : "; ");
+      //console.log(tPresence.activities.length? tPresence.activities[0].name: "" );
+      //console.log("n activities: " + tPresence.activities.length);
+    }
+    //console.log(out)
+    out += "\nTry to contact " + (mentionedIDs.length == 1 ? "hem/her" : "them") + " later, my friend";
+    if(mentionedIDs.length){
+      //console.log(mentionedIDs.length);
+      msg.reply(out);
+    }
+  }
 
-  
-  if(inp.indexOf('arturbot')>=0 && !msg.client.user.equals(client.user)){
+  if(inp.indexOf('arturbot')>=0 && !msg.author.equals(client.user)){
     msg.reply(help);
   }
 });
