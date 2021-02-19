@@ -1,7 +1,7 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
 const config = require('./config.json');
-//const fs = require('fs'); //readFile function 
+const fs = require('fs'); //readFile function 
 //var StringBuilder = require('stringbuilder');
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
@@ -23,13 +23,31 @@ let attempts = 0;
 
 //bot vars
 const prefix = '!@';
-let help = "Hey my friend, Commands I have for now:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game\n!@match <name1> <name2> [any optinal args]\n!@happy-birthday <name>\nv0.02\n\nThanks to Artur,Aman(they are real sweet hearts)\nhttps://github.com/ar2rworld/ArturBot/blob/master/index.js\n\n\n";
-
+let help = "Hey my friend, Commands I have for now:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game\n!@match <name1> <name2> [any optinal args]\n!@happy-birthday <name>\n!@autoreply //everytime anyone mentions your in the message, bot replies with default message \n->!@autoreply <on/off> //changes your autoreply status\n->!@autoreply <on/off> <your message> //updates autoreply status and sets messages to provided\n->!@autoreply <your message> //changes your autoreply message and sets status to \"on\"\nv0.02\n\nThanks to Artur,Aman(they are real sweet hearts)\nhttps://github.com/ar2rworld/ArturBot/blob/master/index.js\n";
+let autoreplyFileExists = false;
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
   console.log(help);
   client.user.setActivity("!@help", {type : "PLAYING"}).then(p => console.log("Activity set to " + p.activities[0].name));
   //console.log(client.guilds.cache.get("736262572076040322").members);
+  //
+  //autoreply.json file exists check
+  var f = "autoreply.json";
+  if(fs.existsSync("./" + f)){
+    console.log(f+ " file does exist");
+    autoreplyFileExists = true; 
+  }else{
+    console.log(f+ " file does not exist");
+    var data = {"users" : {}};
+    fs.writeFile(f, JSON.stringify(data), function(err){
+          if(err){
+            console.log(err);
+          }else{
+            console.log(f + " file created");
+            autoreplyFileExists = true; 
+          }
+        });
+  }
 });
 
 
@@ -99,30 +117,107 @@ client.on('message', msg => {
       }else{
         msg.reply("Invalid input: !@happy-birthday <name>");
       }
+    }else if(inp.indexOf("play")>0){
+        /*
+        console.log(client.channels.cache.filter(c => c.type === "voice").array()[0].id);
+        const v0 = client.channels.cache.filter(c => c.type === "voice").array()[0];
+        const channel = v0;
+        if (!channel) return console.error("The channel does not exist!");
+          channel.join().then(connection => {
+          // Yay, it worked!
+          console.log("Successfully connected.");
+          connection.play("./21pilots_heathens.mp3");
+        }).catch(e => {
+          // Oh no, it errored! Let's log it to console :)
+          console.error(e);
+        });
+        */
+    }else if(inp.indexOf("autoreply")>0){
+      console.log(msg.author.id + " " + msg.author.username);
+      if(autoreplyFileExists){
+        let rawdata = fs.readFileSync('autoreply.json');
+        let ARusers = JSON.parse(rawdata);
+        const temp = inp.split(" ");
+        //console.log(ARusers);
+        if(ARusers.users.hasOwnProperty(msg.author.id)){
+          if(temp.length === 1){
+            msg.reply("I see your command and your id in my log, please check the !@help");
+          }else if(temp.length === 2){
+            if(temp[1] === "on" || temp[1] === "off"){
+              ARusers.users[msg.author.id].status = temp[1];
+              msg.reply("You autoreply status updated");
+            }else{
+              ARusers.users[msg.author.id].status = "on";
+              ARusers.users[msg.author.id].message = msg.content.split(" ")[1];
+              msg.reply("Your autoreply status is on and message updated");
+            }
+          }else{
+            if(temp[1] === "on" || temp[1] === "off"){
+              ARusers.users[msg.author.id].status = temp[1];
+              ARusers.users[msg.author.id].message = msg.content.split(" ").slice(2).join(" ");
+              msg.reply("You autoreply status updated and is working now with your custom message");
+            }else{
+              ARusers.users[msg.author.id].status = "on";
+              ARusers.users[msg.author.id].message = msg.content.split(" ").slice(1).join(" ");
+              msg.reply("You autoreply status is on and is working now with your custom message");
+            }
+          }
+        }else{
+          ARusers.users[msg.author.id] = {
+            "status" : "on",
+            "message" : (temp.length === 1 ? "Hello, this is a default autoreply message, have a nice day!": msg.content.split(" ").slice(1).join(" "))
+          }
+          msg.reply("You autoreply created and is working now");
+        }
+        var out = "";
+        fs.writeFile("autoreply.json", JSON.stringify(ARusers), function(err){
+              if(err){
+                console.log(err);
+                out = err;
+              }
+            });
+        msg.reply((out?out : "You autoreply is working now without errors"));
+      }else{
+        msg.reply("autoreply function is not available, as file does not exist");
+      }
     }//next command
     
   }
-  //console.log("msg.cont" + msg.content + "  " + msg.client.user.id  + " " +  client.user.id);
-  if(msg.channel.type === "text" && !msg.author.equals(client.user)){
+  //console.log("msg.cont: " + msg.content + "  " + msg.client.user.id  + " " +  client.user.id);
+
+
+  if(msg.channel.type === "text" && !msg.author.equals(client.user) && msg.mentions.members.array().length > 0){
     //console.log(msg.author.id + " " + msg.author.discriminator + " "); 
     const mentionedIDs = msg.mentions.members.array();
-    let out = "Sorry, but user" + (mentionedIDs.length==1 ? "" : "s") + ": ";
+    let rawdata = fs.readFileSync('autoreply.json');
+    let ARusers = JSON.parse(rawdata);
     for(let i=0; i < mentionedIDs.length; i+=1){
-      const tPresence = mentionedIDs[i].user.presence;
-      out += mentionedIDs[i].user.username + " is "+ (tPresence.activities.length ? tPresence.activities[0].type + " " + tPresence.activities[0].name : tPresence.status) + (i==mentionedIDs.length-1 ? "" : "; ");
-      //console.log(tPresence.activities.length? tPresence.activities[0].name: "" );
-      //console.log("n activities: " + tPresence.activities.length);
-    }
-    //console.log(out)
-    out += "\nTry to contact " + (mentionedIDs.length == 1 ? "hem/her" : "them") + " later, my friend";
-    if(mentionedIDs.length){
-      //console.log(mentionedIDs.length);
-      msg.reply(out);
+      const userID = mentionedIDs[i].user.id;
+      //console.log(userID+ " in the log? " + ARusers.users.hasOwnProperty(userID));
+      if(ARusers.users.hasOwnProperty(userID)){
+        if(ARusers.users[userID].status === "on"){
+           msg.reply("Autoreply from " + mentionedIDs[i].user.username + ":\n" + ARusers.users[userID].message); 
+        }
+      }
     }
   }
 
   if(inp.indexOf('arturbot')>=0 && !msg.author.equals(client.user)){
     msg.reply(help);
+  }
+  if( msg.mentions.members.array().length > 0 && !msg.author.equals(client.user)){
+    const mentionedIDs = msg.mentions.members.array();
+    var out = 0;
+    for(let i=0; i < mentionedIDs.length; i+=1){
+      const userID = mentionedIDs[i].user.id;
+      if(userID === client.user.id){
+        out = 1;
+        break;
+      }
+    }
+    if(out){
+      msg.reply("Sup dude? Come check my docs out !@help");
+    }
   }
 });
 client.login(config.token);
