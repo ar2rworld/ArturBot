@@ -74,11 +74,11 @@ client.on('ready', () => {
 client.on('message', msg => { 
   const inp = msg.content.toLowerCase();
   if(inp.startsWith(prefix)){ 
-    if(inp.indexOf('help')>0){
+    if(inp.split(" ")[0] === prefix+"help"){
       msg.reply(help);
-    }else if(inp.indexOf('changeava')>0){
+    }else if(inp.split(" ")[0] === prefix+"changeava"){
       client.user.setAvatar('https://random-d.uk/api/randomimg').then(msg.reply('Image is set, my friend, it is always good to have something dynemic =)')).catch(console.error);
-    }else if(inp.indexOf('isthebest')>0){
+    }else if(inp.split(" ")[0] === prefix+"isthebest"){
       const tempInp = inp.split(' ');
       if(tempInp.length === 2){
         const val = getASCIIsum(tempInp[1]) % 101;
@@ -88,7 +88,7 @@ client.on('message', msg => {
       }else{
         msg.reply("My dear, can you please use exactly one argument for this command? Check out help: "+ prefix + "help");
       }
-    }else if(inp.indexOf("number")>0){
+    }else if(inp.split(" ")[0] === prefix+"number"){
       const tempArgs = inp.split(' ');
       if(gameStatus){
         if(tempArgs.length === 2){
@@ -122,14 +122,14 @@ client.on('message', msg => {
         gameStatus = true;
         msg.reply("Game started, enter !@number <your number>\nI will say if it is bigger or smaller\nrange(0, 99)");
       }
-    }else if(inp.indexOf("match")>0){
+    }else if(inp.split(" ")[0] === prefix+"match"){
       if(inp.split(" ").length > 2){
         const val = getASCIIsum(inp.split(" ").slice(1).join("")) % 100;
         msg.reply((val > 35?"OH, You guys have a chance of " + val + "%." : "Sorry, you chances as low as " + val + "% but never give up!")); 
       }else{
         msg.reply("Oh brother/sister/both, can you please provide me at least two arguments: !@match <name1> <name2> ...");
       }
-    }else if(inp.indexOf("happy-birthday")>0){
+    }else if(inp.split(" ")[0] === prefix+"happy-birthday"){
       //https://www.youtube.com/watch?v=ORCqbKG4Z0M
       const temp = inp.split(" ");
       if(temp.length === 2){
@@ -137,7 +137,7 @@ client.on('message', msg => {
       }else{
         msg.reply("Invalid input: !@happy-birthday <name>");
       }
-    }else if(inp.indexOf("play")>0){
+    }else if(inp.split(" ")[0] === prefix+"play"){
         //console.log(msg.author.client.channels);
         //console.log(client.channels.cache.filter(c => c.type === "voice").array()[0].id);
         const v0 = client.channels.cache.filter(c => c.type === "voice").array();
@@ -172,9 +172,7 @@ opusEndcoded: true
           // Oh no, it errored! Let's log it to console :)
           console.error(e);
         });
-
-     
-    }else if(inp.indexOf("autoreply")>0){
+    }else if(inp.split(" ")[0] === prefix+"autoreply"){
       console.log(msg.author.id + " " + msg.author.username);
       if(autoreplyFileExists){
         let rawdata = fs.readFileSync('autoreply.json');
@@ -224,7 +222,7 @@ opusEndcoded: true
       }else{
         msg.reply("autoreply function is not available, as file does not exist");
       }
-    }else if(inp.indexOf("meme")>0){
+    }else if(inp.split(" ")[0] === prefix+"meme"){
       if(msg.attachments.array().length>0 || inp.split(" ").length > 1){
       const atts = msg.attachments.array();
       if(atts.length > 0){
