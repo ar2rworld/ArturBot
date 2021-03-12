@@ -28,46 +28,50 @@ const download = (url, path, callback) => {
     console.log(err);
   }
 }
+const updateMana = member =>{
+  var tempMana = (member.mana + (Date.now() - member.time)/(1000*config.manaRegen));
+  if(tempMana > config.manaPool)
+    tempMana = config.manaPool;
+  return tempMana;
+}
 const checkMemberMagic = (msg, spell, targetID) =>{
-    let rawdata = fs.readFileSync(config.magicFile);
-    let magicMembers = JSON.parse(rawdata);
+    console.log(magicMembers);
     const id = msg.author.id;
-    console.log("checkMemberMagic functio");
+    const member = magicMembers[id];
     if(spell === config.memberVoiceKick){
       if(magicMembers.hasOwnProperty(id)===false){
-    console.log("1heckMemberMagic functio");
+        console.log("1heckMemberMagic functio");
         return "You don't have a magic license";
       }
-      if(magicMembers[id].mana <= config.costMemberVoiceKick){
-    console.log("2heckMemberMagic functio");
+      var tempMana = updateMana(member); 
+      if(tempMana >= 100){
+        tempMana = 100;
+      }
+      if(tempMana <= config.costMemberVoiceKick){
+        console.log("2heckMemberMagic functio");
+        console.log(tempMana);
         return "Not enough mana";
       }
-      if(Date.now() - magicMembers[id].memberVoiceKick < config.CDmemberVoiceKick){
-    console.log("3heckMemberMagic functio");
-        return "CD, not ready yet";
+      var cd = Date.now() - magicMembers[id][config.memberVoiceKick];
+      console.log("CD: " + cd + ` Date.now(): ${Date.now()} - lastUsed: ${magicMembers[id][config.memberVoiceKick]}`);
+      if(cd < config.CDmemberVoiceKick){
+        console.log("3heckMemberMagic functio");
+        return `CD(${cd}), not ready yet`;
       }
       if(magicMembers.hasOwnProperty(targetID)===false){
-    console.log("4heckMemberMagic functio");
+        console.log("4heckMemberMagic functio");
         return "Your target is not a wizard, so just let him/her go... Or motivate him/her to get a license";
       }
+      magicMembers[id].mana = tempMana;
       magicMembers[id].mana -= config.costMemberVoiceKick;
       magicMembers[id].k = Date.now();
-      var out = "";
-      fs.writeFile(config.magicFile, JSON.stringify(magicMembers), function(err){
-        if(err){
-          console.log(err);
-          out = err;
-        }
-      });
-      console.log("written");
-      
-      //fs.writeFileSync(config.magicFile, magicMembers);
-      return "";//writeToJSON(config.magicFile, magicMembers);
+      magicMembers[id].time = Date.now();
+      return "";
     }
 }
 const writeToJSON = (f,j) => {
   var out = "";
-  fs.writeFile(f, JSON.stringify(j), function(err){
+  fs.writeFileSync(f, JSON.stringify(j), function(err){
     if(err){
       console.log(err);
       out = err;
@@ -80,7 +84,7 @@ const writeToJSON = (f,j) => {
 let gameStatus = false;
 let number = 0;
 let attempts = 0;
-
+let magicMembers = {};
 //bot vars
 const prefix = config.prefix;
 let help = "Hey my friend, Commands I have for now:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game\n!@match <name1> <name2> [any optinal args]\n!@happy-birthday <name>\n!@autoreply //everytime anyone mentions your in the message, bot replies with default message \n->!@autoreply <on/off> //changes your autoreply status\n->!@autoreply <on/off> <your message> //updates autoreply status and sets messages to provided\n->!@autoreply <your message> //changes your autoreply message and sets status to \"on\"\n!@meme //sends a meme from local storage\n->!@meme //if picture is attached to the message it will be saved to the local storage\n->!@meme <direct link to an image> //donwloads image from web into the storage, supports many links separated by single SPACE\nv0.02\n\nThanks to Artur,Aman(they are real sweet hearts)\nhttps://github.com/ar2rworld/ArturBot/blob/master/index.js\n";
@@ -92,7 +96,7 @@ client.on('ready', () => {
   console.log(help);
   client.user.setActivity("!@help", {type : "PLAYING"}).then(p => console.log("Activity set to " + p.activities[0].name));
   //console.log(client.guilds.cache.get("736262572076040322").members);
-  //
+  //magic
   //autoreply.json file exists check
   var f = "autoreply.json";
   if(fs.existsSync("./" + f)){
@@ -119,6 +123,7 @@ client.on('ready', () => {
   }else{
     console.log(fm+ " file does not exist");
     var data = {"users" : {}};
+    magicMembers = data; 
     fs.writeFile(fm, JSON.stringify(data), function(err){
           if(err){
             console.log(err);
@@ -300,11 +305,9 @@ client.on('message',async msg => {
       if(msg.attachments.array().length>0 || tokens.length > 1){
       const atts = msg.attachments.array();
       if(atts.length > 0){
-        //console.log(atts);
         for(let i=0; i<atts.length; i+=1){
-          //console.log(atts[i].name + " -> " +  atts[i].attachment);
           let url = atts[i].proxyURL;
-          download(url, config.memes+postfix+atts[i].name, () => {//config.memes+postfix+atts[i].name, 
+          download(url, config.memes+atts[i].name, () => {//config.memes+postfix+atts[i].name, 
             msg.channel.send("GOt it");
           });
         }
@@ -320,7 +323,6 @@ client.on('message',async msg => {
           });
       }
       }else{
-        //console.log(msg.attachments.array()[0].attachment);
         fs.readdir(config.memes, (err, files) => {
             if(err){
               console.log(err);
@@ -333,20 +335,17 @@ client.on('message',async msg => {
                 msg.channel.send("No files found in dir");
               }
             }
-            });
+        });
       }
-      //console.log(msg.attachments.array());
-      //node -e 'const fs = require("fs");fs.writeFile("1.jpg", "https://media.discordapp.net/attachments/812960123265089538/813263670058024970/d.jpg", err => {console.log(err)});'
     }else if(tokens[0] === prefix+"rip"){
       msg.channel.send("Death is worth living, and love is worth the wait!\n@V. Tsoy");
     }
     else if(tokens[0] === prefix+config.memberVoiceKick && magicEnabledServer){
-      //console.log(msg.mentions.members.array());
       var members = msg.mentions.members.array();
       if(members.length>0){
         for(let i=0; i<members.length; i+=1){
-          //console.log(members[i]);
-          if(members[i].voice.channel != null ){//&& members[i].voice.channel.equals(msg.member.voice.channel)){//&& members[i].voice.channel.equals(msg.member.voice.channel)){
+          console.log(members[i].voice.channelID+"\n" +  msg.member.voice.channelID);
+          if(members[i].voice.channelID === msg.member.voice.channelID){//&& members[i].voice.channel.equals(msg.member.voice.channel)){//&& members[i].voice.channel.equals(msg.member.voice.channel)){
             const check = checkMemberMagic(msg,config.memberVoiceKick, members[i].id);
             if(!check){
               console.log("->" + members[i].user.username + " kicked out");
@@ -354,11 +353,11 @@ client.on('message',async msg => {
             }else{
               msg.reply(check);
             }
+          }else{
+            msg.channel.send(`${members[i].user.username} is not in the voice channel with you`);
           }
         }
       }
-      //member.voice.kick().then(m => console.log(m))
-      //.catch( err => console.log("ERROR\n" + err));
     }
     else if(tokens[0] === prefix+config.memberVoiceMute && magicEnabledServer && checkMemberMagic(msg, config.memberVoiceMute)){
       //console.log(msg.mentions.members.array());
@@ -376,17 +375,14 @@ client.on('message',async msg => {
         //.catch( err => console.log("ERROR\n" + err));
     }else if(tokens[0] === prefix+"magic"){
       var out="";
-      let rawdata = fs.readFileSync(config.magicFile);
-      let magicMembers = JSON.parse(rawdata);
       var id = msg.author.id;
-      console.log(magicMembers);
       if(!magicMembers.hasOwnProperty(id)){
         if(tokens.length === 3){
           if(tokens[1] === "on"){
             magicMembers[id] = {
-              "status" : "on", "nickname" : tokens[2], "mana":100, "time": Date.now(), [config.memberVoiceMute]:0, [config.memberVoiceKick]:0
+              "status" : "on", "nickname" : tokens[2], "mana":[config.manaPool], "time": Date.now(), [config.memberVoiceMute]:0, [config.memberVoiceKick]:0
             };
-            const out = writeToJSON(config.magicFile, magicMembers); 
+            //const out = writeToJSON(config.magicFile, magicMembers); 
             if(!out){
               msg.channel.send("Congrats! You got your license");
             }else{
@@ -394,16 +390,25 @@ client.on('message',async msg => {
             }
           }else if(tokens[1] === "off"){
             magicMembers[id] = {
-              "status" : "off", "nickname" : tokens[2], "mana":100, "time": Date.now(), [config.memberVoiceMute]:0, [config.memberVoiceKick]:0
-            };
+              "status" : "off", "nickname" : tokens[2], "mana":magicMembers[id].mana, "time": Date.now(), [config.memberVoiceMute]:0, [config.memberVoiceKick]:0
+            };//never could be run as above hasOwnProperty id check
           }
         }else{
           msg.channel.send("Invalid arguments, check out my " + prefix + "help");
         }
       }else{
+        magicMembers[id].mana = updateMana(magicMembers[id]);
         msg.channel.send(`Wizard ${magicMembers[id].nickname} has ${magicMembers[id].mana} of mana`);
       }
+      //saving magicMembers to json
+      if(tokens[1] === "save"){
+        writeToJSON(config.magicFile, magicMembers);
+      }
       console.log(magicMembers);
+    }else if(tokens[0] === prefix + "love"){
+      const a ="💋 💋 💋 💋 💋 💋 💋 💋 💋 💋 💋 💌 💌 💌 💌 💌 💌 💌 💌 💌 💌 💌 💘 💘 💘 💘 💘 💘 💘 💘 💘 💘 💘 💝 💝 💝 💝 💝 💝 💝 💝 💝 💝 💝 💖 💖 💖 💖 💖 💖 💖 💖 💖 g 💖 💗 💗 💗 💗     💗 💗 💗 💗 💗 💗 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💞 💞 💞 💞 💞 💞💞 💞 💞 💞 💕 💕 💕 💕 💕 💕 💕 💕 💕 💕 💕 💟 💟 💟 💟 💟 💟 💟 💟 💟 💟 ❣ ❣ ❣ ❣ ❣ ❣ ❣ ❣ 💔 💔 💔 💔 💔     💔 💔 💔 💔 💔 💔 🔥 🔥 ⊛"
+      b = a.split(" ");
+      msg.channel.send(b[Math.floor(Math.random()*b.length)]);
     }//next command
     
   }
@@ -428,7 +433,7 @@ client.on('message',async msg => {
   if(inp.indexOf('arturbot')>=0 && !msg.author.equals(client.user)){
     msg.reply(help);
   }
-  if( msg.mentions.members.array().length > 0 && !msg.author.equals(client.user)){
+  if(msg.mentions.members.array().length > 0 && !msg.author.equals(client.user)){
     const mentionedIDs = msg.mentions.members.array();
     var out = 0;
     for(let i=0; i < mentionedIDs.length; i+=1){
@@ -443,5 +448,8 @@ client.on('message',async msg => {
     }
   }
 });
+client.setInterval(()=>{
+    writeToJSON("1.txt", {"1" : "123"});
+    }, 1000);
 client.login(config.token);
-//nodemon --inspect index.js
+//cd ~/d*/A* ; nodemon --inspect index.js --ignore magic.json
