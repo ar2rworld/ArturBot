@@ -56,7 +56,7 @@ const checkMemberMagic = (msg, spell, targetID) =>{
       console.log("CD: " + cd + ` Date.now(): ${Date.now()} - lastUsed: ${magicMembers[id][config.memberVoiceKick]}`);
       if(cd < config.CDmemberVoiceKick){
         console.log("3heckMemberMagic functio");
-        return `CD(${cd}), not ready yet`;
+        return `CD(${config.CDmemberVoiceKick - cd}), not ready yet`;
       }
       if(magicMembers.hasOwnProperty(targetID)===false){
         console.log("4heckMemberMagic functio");
@@ -64,7 +64,65 @@ const checkMemberMagic = (msg, spell, targetID) =>{
       }
       magicMembers[id].mana = tempMana;
       magicMembers[id].mana -= config.costMemberVoiceKick;
-      magicMembers[id].k = Date.now();
+      magicMembers[id][config.memberVoiceKick] = Date.now();
+      magicMembers[id].time = Date.now();
+      return "";
+    }else if(spell === config.memberVoiceMute){
+      if(magicMembers.hasOwnProperty(id)===false){
+        console.log("1heckMemberMagic functio");
+        return "You don't have a magic license";
+      }
+      var tempMana = updateMana(member); 
+      if(tempMana >= 100){
+        tempMana = 100;
+      }
+      if(tempMana <= config.costMemberVoiceMute){
+        console.log("2heckMemberMagic functio");
+        console.log(tempMana);
+        return "Not enough mana";
+      }
+      var cd = Date.now() - magicMembers[id][config.memberVoiceMute];
+      console.log("CD: " + cd + ` Date.now(): ${Date.now()} - lastUsed: ${magicMembers[id][config.memberVoiceMute]}`);
+      if(cd < config.CDmemberVoiceMute){
+        console.log("3heckMemberMagic functio");
+        return `CD(${config.CDmemberVoiceMute - cd}), not ready yet`;
+      }
+      if(magicMembers.hasOwnProperty(targetID)===false){
+        console.log("4heckMemberMagic functio");
+        return "Your target is not a wizard, so just let him/her go... Or motivate him/her to get a license";
+      }
+      magicMembers[id].mana = tempMana;
+      magicMembers[id].mana -= config.costMemberVoiceMute;
+      magicMembers[id][config.memberVoiceMute] = Date.now();
+      magicMembers[id].time = Date.now();
+      return "";
+    }else if(spell === config.memberVoiceUnmute){
+      if(magicMembers.hasOwnProperty(id)===false){
+        console.log("1heckMemberMagic functio");
+        return "You don't have a magic license";
+      }
+      var tempMana = updateMana(member); 
+      if(tempMana >= 100){
+        tempMana = 100;
+      }
+      if(tempMana <= config.costMemberVoiceUnmute){
+        console.log("2heckMemberMagic functio");
+        console.log(tempMana);
+        return "Not enough mana";
+      }
+      var cd = Date.now() - magicMembers[id][config.memberVoiceUnmute];
+      console.log("CD: " + cd + ` Date.now(): ${Date.now()} - lastUsed: ${magicMembers[id][config.memberVoiceMute]}`);
+      if(cd < config.CDmemberVoiceMute){
+        console.log("3heckMemberMagic functio");
+        return `CD(${config.CDmemberVoiceUnmute - cd}), not ready yet`;
+      }
+      if(magicMembers.hasOwnProperty(targetID)===false){
+        console.log("4heckMemberMagic functio");
+        return "Your target is not a wizard, so just let him/her go... Or motivate him/her to get a license";
+      }
+      magicMembers[id].mana = tempMana;
+      magicMembers[id].mana -= config.costMemberVoiceUnmute;
+      magicMembers[id][config.memberVoiceUnmute] = Date.now();
       magicMembers[id].time = Date.now();
       return "";
     }
@@ -87,7 +145,7 @@ let attempts = 0;
 let magicMembers = {};
 //bot vars
 const prefix = config.prefix;
-let help = "Hey my friend, Commands I have for now:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game\n!@match <name1> <name2> [any optinal args]\n!@happy-birthday <name>\n!@autoreply //everytime anyone mentions your in the message, bot replies with default message \n->!@autoreply <on/off> //changes your autoreply status\n->!@autoreply <on/off> <your message> //updates autoreply status and sets messages to provided\n->!@autoreply <your message> //changes your autoreply message and sets status to \"on\"\n!@meme //sends a meme from local storage\n->!@meme //if picture is attached to the message it will be saved to the local storage\n->!@meme <direct link to an image> //donwloads image from web into the storage, supports many links separated by single SPACE\nv0.02\n\nThanks to Artur,Aman(they are real sweet hearts)\nhttps://github.com/ar2rworld/ArturBot/blob/master/index.js\n";
+let help = "Hey my friend, Commands I have for now:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game\n!@match <name1> <name2> [any optinal args]\n!@happy-birthday <name>\n!@autoreply //everytime anyone mentions your in the message, bot replies with default message \n->!@autoreply <on/off> //changes your autoreply status\n->!@autoreply <on/off> <your message> //updates autoreply status and sets messages to provided\n->!@autoreply <your message> //changes your autoreply message and sets status to \"on\"\n!@meme //sends a meme from local storage\n->!@meme //if picture is attached to the message it will be saved to the local storage\n->!@meme <direct link to an image> //donwloads image from web into the storage, supports many links separated by single SPACE\n" + prefix + "love //returns how much love u need\n//Now you can server mute and kick another user from the voice channel...Magic\nThere is 5 conditions you need to keep in mind:\n1)Server is magic enabled\n2)You have a magic licence\n3)You have enough mana\n4)Skill you using is not in CD\n5)User which is your target has a magic licence as well\n//Magic commands\n" + prefix + "magic <on/off> <Your magic name> //to get a licence\n" + prefix+ config.memberVoiceKick + " <tag user/users> //to kick user/users from the voice channel\n" + prefix + config.memberVoiceMute+ " <tag user/users> //to server mute user\n" + prefix + config.memberVoiceUnmute + " <tag user/users> //to unmute user\nv0.03\n\nThanks to Artur,Aman(they are real sweet hearts)\nhttps://github.com/ar2rworld/ArturBot\n";
 let autoreplyFileExists = false;
 let magicEnabledServer = false;
 
@@ -119,10 +177,11 @@ client.on('ready', () => {
   var fm = config.magicFile;
   if(fs.existsSync("./" + fm)){
     console.log(fm+ " file does exist");
-    autoreplyFileExists = true; 
+    let rawdata = fs.readFileSync(fm);
+    magicMembers = JSON.parse(rawdata);
   }else{
     console.log(fm+ " file does not exist");
-    var data = {"users" : {}};
+    var data = {};
     magicMembers = data; 
     fs.writeFile(fm, JSON.stringify(data), function(err){
           if(err){
@@ -345,34 +404,62 @@ client.on('message',async msg => {
       if(members.length>0){
         for(let i=0; i<members.length; i+=1){
           console.log(members[i].voice.channelID+"\n" +  msg.member.voice.channelID);
-          if(members[i].voice.channelID === msg.member.voice.channelID){//&& members[i].voice.channel.equals(msg.member.voice.channel)){//&& members[i].voice.channel.equals(msg.member.voice.channel)){
-            const check = checkMemberMagic(msg,config.memberVoiceKick, members[i].id);
-            if(!check){
-              console.log("->" + members[i].user.username + " kicked out");
-              members[i].voice.kick();
+          if(members[i].voice.channelID!=null && msg.member.voice.channelID!=null){
+            if(members[i].voice.channelID === msg.member.voice.channelID && members[i].voice.channel.equals(msg.member.voice.channel)){//&& members[i].voice.channel.equals(msg.member.voice.channel)){
+              const check = checkMemberMagic(msg,config.memberVoiceKick, members[i].id);
+              if(!check){
+                console.log("->" + members[i].user.username + " kicked out");
+                members[i].voice.kick();
+              }else{
+                msg.channel.send(check);
+              }
             }else{
-              msg.reply(check);
+              msg.channel.send(`${members[i].user.username} is not in the voice channel with you`);
             }
           }else{
-            msg.channel.send(`${members[i].user.username} is not in the voice channel with you`);
+            msg.channel.send(`${members[i].user.username} or you is not in the voice channel`);
           }
         }
       }
     }
-    else if(tokens[0] === prefix+config.memberVoiceMute && magicEnabledServer && checkMemberMagic(msg, config.memberVoiceMute)){
-      //console.log(msg.mentions.members.array());
+    else if(tokens[0] === prefix+config.memberVoiceMute && magicEnabledServer){
       var members = msg.mentions.members.array();
       if(members.length>0){
         for(let i=0; i<members.length; i+=1){
-          //console.log(members[i]);
-          if(members[i].voice.channel != null){//&& members[i].voice.channel.equals(msg.member.voice.channel)){ //&& members[i].voice.channel.equals(msg.member.voice.channel)){
-            console.log("->" + members[i].user.username + " is muted");
-            members[i].voice.setMute(true);
-          }
+          console.log(members[i].voice.channelID+"\n" +  msg.member.voice.channelID);
+          if(members[i].voice.channelID!=null && msg.member.voice.channelID!=null){
+            if(members[i].voice.channelID === msg.member.voice.channelID && members[i].voice.channel.equals(msg.member.voice.channel)){//&& members[i].voice.channel.equals(msg.member.voice.channel)){
+              const check = checkMemberMagic(msg,config.memberVoiceMute, members[i].id);
+              if(!check){
+                console.log("->" + members[i].user.username + " muted");
+                members[i].voice.setMute(true);
+              }else{
+                msg.channel.send(check);
+              }
+            }else{
+              msg.channel.send(`${members[i].user.username} is not in the voice channel with you`);
+            }
+        }else{
+            msg.channel.send(`${members[i].user.username} or you is not in the voice channel`);
         }
       }
-        //member.voice.kick().then(m => console.log(m))
-        //.catch( err => console.log("ERROR\n" + err));
+    }
+    }
+    else if(tokens[0] === prefix+config.memberVoiceUnmute && magicEnabledServer){
+      var members = msg.mentions.members.array();
+      if(members.length>0){
+        for(let i=0; i<members.length; i+=1){
+          console.log(members[i].voice.channelID+"\n" +  msg.member.voice.channelID);
+              const check = checkMemberMagic(msg,config.memberVoiceUnmute, members[i].id);
+              if(!check){
+                console.log("->" + members[i].user.username + " unmuted");
+                members[i].voice.setMute(false);
+              }else{
+                msg.channel.send(check);
+              }
+      }
+      msg.member.voice.setMute(false);
+      }
     }else if(tokens[0] === prefix+"magic"){
       var out="";
       var id = msg.author.id;
@@ -380,7 +467,7 @@ client.on('message',async msg => {
         if(tokens.length === 3){
           if(tokens[1] === "on"){
             magicMembers[id] = {
-              "status" : "on", "nickname" : tokens[2], "mana":[config.manaPool], "time": Date.now(), [config.memberVoiceMute]:0, [config.memberVoiceKick]:0
+              "status" : "on", "nickname" : tokens[2], "mana":config.manaPool, "time": Date.now(), [config.memberVoiceMute]:0, [config.memberVoiceKick]:0
             };
             //const out = writeToJSON(config.magicFile, magicMembers); 
             if(!out){
