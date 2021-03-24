@@ -173,7 +173,6 @@ client.on('ready', () => {
         });
   }
 
-  //magic.json file exists check
   var fm = config.magicFile;
   if(fs.existsSync("./" + fm)){
     console.log(fm+ " file does exist");
@@ -198,9 +197,18 @@ client.on('ready', () => {
         fs.mkdirSync("memes");
         console.log("memes folder created");
       }});
-
+  console.log(client.guilds.cache.array()[1].channels); 
 });
 
+//check member joining specific voice channel to create a new room
+//https://discord.js.org/#/docs/main/stable/typedef/GuildMemberEditData
+client.on('voiceStateUpdate', (oldS, newS) =>{
+  console.log( newS.channelID);
+  if( newS.channelID === config.create_roomVoiceChannel){
+    console.log("Got it!");
+    newS.member.edit({channel:"812786330294681655"})
+  }
+});
 
 client.on('message',async msg => { 
   magicEnabledServer = config.magicEnabledServers.includes(msg.guild.id);
