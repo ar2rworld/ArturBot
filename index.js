@@ -158,7 +158,7 @@ let attempts = 0;
 let magicMembers = {};
 //bot vars
 const prefix = config.prefix;
-let help = "Hey my friend, Commands I have for now:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game\n!@match <name1> <name2> [any optinal args]\n!@happy-birthday <name>\n!@autoreply //everytime anyone mentions your in the message, bot replies with default message \n->!@autoreply <on/off> //changes your autoreply status\n->!@autoreply <on/off> <your message> //updates autoreply status and sets messages to provided\n->!@autoreply <your message> //changes your autoreply message and sets status to \"on\"\n!@meme //sends a meme from local storage\n->!@meme //if picture is attached to the message it will be saved to the local storage\n->!@meme <direct link to an image> //donwloads image from web into the storage, supports many links separated by single SPACE\n" + prefix + "love //returns how much love u need\n//Now you can server mute and kick another user from the voice channel...Magic\nThere is 5 conditions you need to keep in mind:\n1)Server is magic enabled\n2)You have a magic licence\n3)You have enough mana\n4)Skill you using is not in CD\n5)User which is your target has a magic licence as well\n//Magic commands\n" + prefix + "magic <on/off> <Your magic name> //to get a licence\n" + prefix+ config.memberVoiceKick + " <tag user/users> //to kick user/users from the voice channel\n" + prefix + config.memberVoiceMute+ " <tag user/users> //to server mute user\n" + prefix + config.memberVoiceUnmute + " <tag user/users> //to unmute user\nv0.03\n\nThanks to Artur,Aman(they are real sweet hearts)\nhttps://github.com/ar2rworld/ArturBot\n";
+let help = "Hey my friend, Commands I have for now:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game\n!@match <name1> <name2> [any optinal args]\n!@happy-birthday <name>\n!@autoreply //everytime anyone mentions your in the message, bot replies with default message \n->!@autoreply <on/off> //changes your autoreply status\n->!@autoreply <on/off> <your message> //updates autoreply status and sets messages to provided\n->!@autoreply <your message> //changes your autoreply message and sets status to \"on\"\n!@meme //sends a meme from local storage\n->!@meme //if picture is attached to the message it will be saved to the local storage\n->!@meme <direct link to an image> //donwloads image from web into the storage, supports many links separated by single SPACE\n" + prefix + "love //returns how much love u need\n//Now you can server mute and kick another user from the voice channel...Magic\nThere is 5 conditions you need to keep in mind:\n1)Server is magic enabled\n2)You have a magic licence\n3)You have enough mana\n4)Skill you using is not in CD\n5)User which is your target has a magic licence as well\n//Magic commands\n" + prefix + "magic <on/off> <Your magic name> //to get a licence\n" + prefix+ config.memberVoiceKick + " <tag user/users> //to kick user/users from the voice channel\n" + prefix + config.memberVoiceMute+ " <tag user/users> //to server mute user\n" + prefix + config.memberVoiceUnmute + " <tag user/users> //to unmute user\n" + prefix+"clean //cleans 1-100 last messages not older than two weeks\nv0.03\n\nThanks to Artur,Aman(they are real sweet hearts)\nhttps://github.com/ar2rworld/ArturBot\n";
 let autoreplyFileExists = false;
 let magicEnabledServer = false;
 
@@ -543,6 +543,12 @@ client.on('message',async msg => {
       }else{
         msg.channel.send("You don't have permission for this command");
       }
+    }else if(tokens[0]===prefix+"clean"){
+      var n = Number(tokens[1]);
+      if(tokens[1] !=null){
+        n=(n?n>100?100:n:1);
+        msg.channel.bulkDelete(n, true);
+      } 
     }//next command
     
   }
