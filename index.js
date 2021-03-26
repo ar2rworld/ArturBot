@@ -220,13 +220,13 @@ client.on('voiceStateUpdate', (oldS, newS) =>{
   console.log( newS.channelID);
   if( newS.channelID === config.create_roomVoiceChannel){
     console.log("Got it!");
-    newS.channel.clone({"name":newS.member.nickname + "'s room"}).then(guildCh =>{
+    newS.channel.clone({"name":(newS.member.nickname?newS.member.nickname:newS.member.user.username) + "'s room"}).then(guildCh =>{
       //console.log(guildCh);
       newS.member.edit({"channel":guildCh.id});
     });
   }
   //console.log(oldS.channel.name.slice(-6));
-  if(oldS.channel.name.slice(-6)==="s room" && oldS.channel.members.array().length === 0){
+  if(oldS.channel!=null&&oldS.channel.name.slice(-6)==="s room" && oldS.channel.members.array().length === 0){
     oldS.channel.delete("cleaning up...(No users in the channel)").then(oldS.guild.systemChannel.send(oldS.channel.name + " deleted.")).catch(err=>{oldS.guild.systemChannel.send("Error occured while deleting the channel:\n"+err)});
   }
 });
