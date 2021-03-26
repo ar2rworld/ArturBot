@@ -43,6 +43,16 @@ const checkMemberMagic = (msg, spell, targetID) =>{
         console.log("1heckMemberMagic functio");
         return "You don't have a magic license";
       }
+      if(magicMembers[id].status==="off"){
+        return "You magic status is off, you probably wanna turn it on, check out " +prefix+ "help";
+      }
+      if(magicMembers.hasOwnProperty(targetID)===false){
+        console.log("4heckMemberMagic functio");
+        return "Your target is not a wizard, so just let him/her go... Or motivate him/her to get a license";
+      }
+      if(magicMembers[targetID].status==="off"){
+        return "The target's status is off, wait for your chance...";
+      }
       var tempMana = updateMana(member); 
       if(tempMana >= 100){
         tempMana = 100;
@@ -53,15 +63,12 @@ const checkMemberMagic = (msg, spell, targetID) =>{
         return "Not enough mana";
       }
       var cd = Date.now() - magicMembers[id][config.memberVoiceKick];
-      console.log("CD: " + cd + ` Date.now(): ${Date.now()} - lastUsed: ${magicMembers[id][config.memberVoiceKick]}`);
+      //console.log("CD: " + cd + ` Date.now(): ${Date.now()} - lastUsed: ${magicMembers[id][config.memberVoiceKick]}`);
       if(cd < config.CDmemberVoiceKick){
         console.log("3heckMemberMagic functio");
         return `CD(${config.CDmemberVoiceKick - cd}), not ready yet`;
       }
-      if(magicMembers.hasOwnProperty(targetID)===false){
-        console.log("4heckMemberMagic functio");
-        return "Your target is not a wizard, so just let him/her go... Or motivate him/her to get a license";
-      }
+      
       magicMembers[id].mana = tempMana;
       magicMembers[id].mana -= config.costMemberVoiceKick;
       magicMembers[id][config.memberVoiceKick] = Date.now();
@@ -71,6 +78,16 @@ const checkMemberMagic = (msg, spell, targetID) =>{
       if(magicMembers.hasOwnProperty(id)===false){
         console.log("1heckMemberMagic functio");
         return "You don't have a magic license";
+      }
+      if(magicMembers[id].status==="off"){
+        return "You magic status is off, you probably wanna turn it on, check out " +prefix+ "help";
+      }
+      if(magicMembers.hasOwnProperty(targetID)===false){
+        console.log("4heckMemberMagic functio");
+        return "Your target is not a wizard, so just let him/her go... Or motivate him/her to get a license";
+      }
+      if(magicMembers[targetID].status==="off"){
+        return "The target's status is off, wait for your chance...";
       }
       var tempMana = updateMana(member); 
       if(tempMana >= 100){
@@ -86,10 +103,6 @@ const checkMemberMagic = (msg, spell, targetID) =>{
       if(cd < config.CDmemberVoiceMute){
         console.log("3heckMemberMagic functio");
         return `CD(${config.CDmemberVoiceMute - cd}), not ready yet`;
-      }
-      if(magicMembers.hasOwnProperty(targetID)===false){
-        console.log("4heckMemberMagic functio");
-        return "Your target is not a wizard, so just let him/her go... Or motivate him/her to get a license";
       }
       magicMembers[id].mana = tempMana;
       magicMembers[id].mana -= config.costMemberVoiceMute;
@@ -197,7 +210,8 @@ client.on('ready', () => {
         fs.mkdirSync("memes");
         console.log("memes folder created");
       }});
-  console.log(client.guilds.cache.array()[1].channels); 
+  //just a testing part    
+  console.log(client.guilds.cache.array()[1].channels.cache.array().filter(ch => ch.name === "create_room")); 
 });
 
 //check member joining specific voice channel to create a new room
@@ -206,12 +220,19 @@ client.on('voiceStateUpdate', (oldS, newS) =>{
   console.log( newS.channelID);
   if( newS.channelID === config.create_roomVoiceChannel){
     console.log("Got it!");
-    newS.member.edit({channel:"812786330294681655"})
+    newS.channel.clone({"name":newS.member.nickname + "'s room"}).then(guildCh =>{
+      //console.log(guildCh);
+      newS.member.edit({"channel":guildCh.id});
+    });
+  }
+  //console.log(oldS.channel.name.slice(-6));
+  if(oldS.channel.name.slice(-6)==="s room" && oldS.channel.members.array().length === 0){
+    oldS.channel.delete("cleaning up...(No users in the channel)").then(oldS.guild.systemChannel.send(oldS.channel.name + " deleted.")).catch(err=>{oldS.guild.systemChannel.send("Error occured while deleting the channel:\n"+err)});
   }
 });
 
 client.on('message',async msg => { 
-  magicEnabledServer = config.magicEnabledServers.includes(msg.guild.id);
+  magicEnabledServer = msg.channel.type==="text"?config.magicEnabledServers.includes(msg.guild.id):0;
   const inp = msg.content.toLowerCase();
   if(inp.startsWith(prefix)){ 
     var tokens = inp.split(" ");
@@ -483,17 +504,18 @@ client.on('message',async msg => {
             }else{
               msg.channel.send("Something went wrong:\n" + out);
             }
-          }else if(tokens[1] === "off"){
-            magicMembers[id] = {
-              "status" : "off", "nickname" : tokens[2], "mana":magicMembers[id].mana, "time": Date.now(), [config.memberVoiceMute]:0, [config.memberVoiceKick]:0
-            };//never could be run as above hasOwnProperty id check
           }
         }else{
           msg.channel.send("Invalid arguments, check out my " + prefix + "help");
         }
       }else{
+        if(tokens[1] === "off"){
+          magicMembers[id] = {
+            "status" : "off", "nickname" : tokens[2], "mana":magicMembers[id].mana, "time": Date.now(), [config.memberVoiceMute]:0, [config.memberVoiceKick]:0
+          };//never could be run as above hasOwnProperty id check
+        }
         magicMembers[id].mana = updateMana(magicMembers[id]);
-        msg.channel.send(`Wizard ${magicMembers[id].nickname} has ${magicMembers[id].mana} of mana`);
+        msg.channel.send(`Wizard ${magicMembers[id].nickname} has ${magicMembers[id].mana} of mana, status: ${magicMembers[id].status}`);
       }
       //saving magicMembers to json
       if(tokens[1] === "save"){
@@ -504,6 +526,23 @@ client.on('message',async msg => {
       const a ="💋 💋 💋 💋 💋 💋 💋 💋 💋 💋 💋 💌 💌 💌 💌 💌 💌 💌 💌 💌 💌 💌 💘 💘 💘 💘 💘 💘 💘 💘 💘 💘 💘 💝 💝 💝 💝 💝 💝 💝 💝 💝 💝 💝 💖 💖 💖 💖 💖 💖 💖 💖 💖 g 💖 💗 💗 💗 💗     💗 💗 💗 💗 💗 💗 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💞 💞 💞 💞 💞 💞💞 💞 💞 💞 💕 💕 💕 💕 💕 💕 💕 💕 💕 💕 💕 💟 💟 💟 💟 💟 💟 💟 💟 💟 💟 ❣ ❣ ❣ ❣ ❣ ❣ ❣ ❣ 💔 💔 💔 💔 💔     💔 💔 💔 💔 💔 💔 🔥 🔥 ⊛"
       b = a.split(" ");
       msg.channel.send(b[Math.floor(Math.random()*b.length)]);
+    }else if(tokens[0] === prefix+"t"){
+      if(msg.channel.type==="text" && msg.author.id === msg.guild.ownerID){
+        if(config.create_roomVoiceChannel){
+          config.create_roomVoiceChannel = 0;
+        }else{
+          var channel = msg.guild.channels.cache.array().filter(ch => ch.name === tokens[1]);
+          if(channel.length===1){
+            channel = channel[0];
+            config.create_roomVoiceChannel = channel.id;
+          }else{
+            msg.channel.send("Invalid channel");
+          }
+          console.log(channel);
+        }
+      }else{
+        msg.channel.send("You don't have permission for this command");
+      }
     }//next command
     
   }
@@ -528,7 +567,7 @@ client.on('message',async msg => {
   if(inp.indexOf('arturbot')>=0 && !msg.author.equals(client.user)){
     msg.reply(help);
   }
-  if(msg.mentions.members.array().length > 0 && !msg.author.equals(client.user)){
+  if(msg.channel.type==="text" && msg.mentions.members.array().length > 0 && !msg.author.equals(client.user)){
     const mentionedIDs = msg.mentions.members.array();
     var out = 0;
     for(let i=0; i < mentionedIDs.length; i+=1){
@@ -543,8 +582,5 @@ client.on('message',async msg => {
     }
   }
 });
-client.setInterval(()=>{
-    writeToJSON("1.txt", {"1" : "123"});
-    }, 1000);
 client.login(config.token);
 //cd ~/d*/A* ; nodemon --inspect index.js --ignore magic.json
