@@ -158,10 +158,10 @@ let attempts = 0;
 let magicMembers = {};
 //bot vars
 const prefix = config.prefix;
-let help = "Hey my friend, Commands I have for now:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game\n!@match <name1> <name2> [any optinal args]\n!@happy-birthday <name>\n!@autoreply //everytime anyone mentions your in the message, bot replies with default message \n->!@autoreply <on/off> //changes your autoreply status\n->!@autoreply <on/off> <your message> //updates autoreply status and sets messages to provided\n->!@autoreply <your message> //changes your autoreply message and sets status to \"on\"\n!@meme //sends a meme from local storage\n->!@meme //if picture is attached to the message it will be saved to the local storage\n->!@meme <direct link to an image> //donwloads image from web into the storage, supports many links separated by single SPACE\n" + prefix + "love //returns how much love u need\n//Now you can server mute and kick another user from the voice channel...Magic\nThere is 5 conditions you need to keep in mind:\n1)Server is magic enabled\n2)You have a magic licence\n3)You have enough mana\n4)Skill you using is not in CD\n5)User which is your target has a magic licence as well\n//Magic commands\n" + prefix + "magic <on/off> <Your magic name> //to get a licence\n" + prefix+ config.memberVoiceKick + " <tag user/users> //to kick user/users from the voice channel\n" + prefix + config.memberVoiceMute+ " <tag user/users> //to server mute user\n" + prefix + config.memberVoiceUnmute + " <tag user/users> //to unmute user\n" + prefix+"clean //cleans 1-100 last messages not older than two weeks\nv0.03\n\nThanks to Artur,Aman(they are real sweet hearts)\nhttps://github.com/ar2rworld/ArturBot\n";
+let help = "Hey my friend, Commands I have for now:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game\n!@match <name1> <name2> [any optinal args]\n!@happy-birthday <name>\n!@autoreply //everytime anyone mentions your in the message, bot replies with default message \n->!@autoreply <on/off> //changes your autoreply status\n->!@autoreply <on/off> <your message> //updates autoreply status and sets messages to provided\n->!@autoreply <your message> //changes your autoreply message and sets status to \"on\"\n!@meme //sends a meme from local storage\n->!@meme //if picture is attached to the message it will be saved to the local storage\n->!@meme <direct link to an image> //donwloads image from web into the storage, supports many links separated by single SPACE\n" + prefix + "love //returns how much love u need\n//Now you can server mute and kick another user from the voice channel...Magic\nThere is 5 conditions you need to keep in mind:\n1)Server is magic enabled\n2)You have a magic licence\n3)You have enough mana\n4)Skill you using is not in CD\n5)User which is your target has a magic licence as well\n//Magic commands\n" + prefix + "magic <on/off> <Your magic name> //to get a licence\n" + prefix+ config.memberVoiceKick + " <tag user/users> //to kick user/users from the voice channel\n" + prefix + config.memberVoiceMute+ " <tag user/users> //to server mute user\n" + prefix + config.memberVoiceUnmute + " <tag user/users> //to unmute user\n" + prefix+"clean //cleans 1-100 last messages not older than two weeks\n" +prefix+ "room_for_user <name of the voice channel> //when user enters this channel bot creates a separate voice channel, moves him/her to the new room, if room ends on \"s room\" and has no users in it bot deletes the room\nv0.03\n\nThanks to Artur,Aman(they are real sweet hearts)\nhttps://github.com/ar2rworld/ArturBot\n";
 let autoreplyFileExists = false;
 let magicEnabledServer = false;
-
+let alarmsMembers={};
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
   console.log(help);
@@ -181,6 +181,23 @@ client.on('ready', () => {
             console.log(err);
           }else{
             console.log(f + " file created");
+            autoreplyFileExists = true; 
+          }
+        });
+  }
+  //alarmsMembers
+  if(fs.existsSync("./" + config.alarmsMembersFile)){
+    console.log(config.alarmsMembersFile+ " file does exist");
+    let rawdata = fs.readFileSync(config.alarmsMembersFile);
+    timerMembers = JSON.parse(rawdata);
+  }else{
+    console.log(config.alarmsMembersFile+ " file does not exist");
+    var data = {};
+    fs.writeFile(config.alarmsMembersFile, JSON.stringify(data), function(err){
+          if(err){
+            console.log(err);
+          }else{
+            console.log(config.alarmsMembersFile + " file created");
             autoreplyFileExists = true; 
           }
         });
@@ -210,8 +227,25 @@ client.on('ready', () => {
         fs.mkdirSync("memes");
         console.log("memes folder created");
       }});
-  //just a testing part    
-  console.log(client.guilds.cache.array()[1].channels.cache.array().filter(ch => ch.name === "create_room")); 
+
+  //alarm sending
+  //alarmsMembers[id]={"times": Math.floor(hours*60/often), "minBeforeSignal":often};
+  client.setInterval(()=>{
+    for(k in alarmsMembers){
+      alarmsMembers[k].minBeforeSignal-=1;
+      if(alarmsMembers[k].minBeforeSignal<=0){
+        alarmsMembers[k].minBeforeSignal=alarmsMembers[k].often;
+        alarmsMembers[k].times-=1;
+        if(alarmsMembers[k].times<=0){
+          delete alarmsMembers[k];
+
+        }
+        
+      }
+    }
+    //console.log(alarmsMembers);
+  }, 1000);
+  console.log(client.users.fetch("635901894824558602").then(u => console.log(u)));
 });
 
 //check member joining specific voice channel to create a new room
@@ -319,7 +353,7 @@ client.on('message',async msg => {
         const dispatcher = connection.play('/ded_maxim.mp3')//ytdl("https://www.youtube.com/watch?v=fCQG9oujWEQ"))
           .on('finish',() => {
               console.log("finished");
-              channel.leave();
+              //channel.leave();
               })
           .on("error", error =>{
             msg.channel.send("Dispatcher error:\n" + error);
@@ -526,7 +560,7 @@ client.on('message',async msg => {
       const a ="💋 💋 💋 💋 💋 💋 💋 💋 💋 💋 💋 💌 💌 💌 💌 💌 💌 💌 💌 💌 💌 💌 💘 💘 💘 💘 💘 💘 💘 💘 💘 💘 💘 💝 💝 💝 💝 💝 💝 💝 💝 💝 💝 💝 💖 💖 💖 💖 💖 💖 💖 💖 💖 g 💖 💗 💗 💗 💗     💗 💗 💗 💗 💗 💗 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💞 💞 💞 💞 💞 💞💞 💞 💞 💞 💕 💕 💕 💕 💕 💕 💕 💕 💕 💕 💕 💟 💟 💟 💟 💟 💟 💟 💟 💟 💟 ❣ ❣ ❣ ❣ ❣ ❣ ❣ ❣ 💔 💔 💔 💔 💔     💔 💔 💔 💔 💔 💔 🔥 🔥 ⊛"
       b = a.split(" ");
       msg.channel.send(b[Math.floor(Math.random()*b.length)]);
-    }else if(tokens[0] === prefix+"t"){
+    }else if(tokens[0] === prefix+"room_for_user"){
       if(msg.channel.type==="text" && msg.author.id === msg.guild.ownerID){
         if(config.create_roomVoiceChannel){
           config.create_roomVoiceChannel = 0;
@@ -549,6 +583,23 @@ client.on('message',async msg => {
         n=(n?n>100?100:n:1);
         msg.channel.bulkDelete(n, true);
       } 
+    }else if(tokens[0]===prefix+"alarms"){
+      if(tokens.length===3){
+        var hours = tokens[1].replace(/[a-zA-Z\W_]+/gi,"");
+        var often = tokens[2].replace(/[a-zA-Z\W_]+/gi,"");
+        //console.log(`${hours} hours, ${often} often in mins`);
+        if(!hours || !often){
+          msg.channel.send("Wrong args...dear((");
+          return;
+        }
+        var id=msg.author.id;
+        alarmsMembers[id]={"times": Math.floor(hours*60/often), "minBeforeSignal":often, "often":often};
+        console.log(alarmsMembers[id]);
+      }else if(tokens.length===2 && tokens[1]==="off"){
+        delete alarmsMembers[msg.author.id];
+      }else{
+        msg.channel.send("Invalid args...dear(");
+      }
     }//next command
     
   }
