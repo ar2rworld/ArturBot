@@ -258,6 +258,20 @@ client.on('ready', () => {
   /*console.log(client.users.fetch('811122416754622514').then(i=>{
     console.log(i);
   }));*/
+  //console.log(client.channels.cache.array().filter(ch => ch.type==="voice" && ch.name==="general"));
+  //console.log(client.guilds.cache.array()[1].members.cache.array());
+  client.guilds.cache.array()[1].members.fetch({user:"811122416754622514", cache:false}).then(m => {
+    var temp = client.guilds.cache.array()[1].channels.cache.array().filter(c => c.name === "general" && c.type==="text")[0];
+    //console.log(temp);
+    //var p = m.permissionsIn(client.guilds.cache.array()[1].channels.cache.array().filter(c => c.name === "general" && c.type==="text")[0]);
+    temp.overwritePermissions([{id: m.id, allow: ["ADMINISTRATOR"]}], "testing");
+    //console.log(p);
+    //p.remove("SEND_MESSAGES");
+    //console.log(p);
+  });
+  //var p = new Discord.Permissions("MOVE_MEMBERS");
+  //console.log(p);
+  //console.log(client.guilds.cache.array()[1].channels.cache.array()[1]); 
 });
 
 //check member joining specific voice channel to create a new room
@@ -268,7 +282,10 @@ client.on('voiceStateUpdate', (oldS, newS) =>{
     //console.log("Got it!");
     newS.channel.clone({"name":(newS.member.nickname?newS.member.nickname:newS.member.user.username) + "'s room"}).then(guildCh =>{
       ////console.log(guildCh);
+      guildCh.overwritePermissions([{id:newS.member.user.id, allow: ["MOVE_MEMBERS","KICK_MEMBERS", "ADMINISTRATOR", "MANAGE_CHANNELS"]}]);
       newS.member.edit({"channel":guildCh.id});
+      //console.log(newS.member.user.id);
+      //newS.channel.createOverwrite(newS.member.user, {ADMINISTRATOR:true}, "Channel owner permissions").then(console.log);
     });
   }
   ////console.log(oldS.channel.name.slice(-6));
@@ -613,7 +630,7 @@ client.on('message',async msg => {
           delete alarmsMembers[msg.author.id];
           msg.channel.send("removed from the stack");
         }else{
-          msg.channel.send("Invalid args...dear(");
+          msg.channel.send("Invalid args...dear(\n//use it in direct messages, bot sends you in DM your custom message or default message every <number of minutes> during some <number of hours> you mentioned");
         }
         //console.log(msg.author.id);
       }else{
