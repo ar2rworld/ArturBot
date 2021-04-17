@@ -164,6 +164,7 @@ let help = "Hey my friend, Commands I have for now:\n!@changeAva\n!@isTheBest <n
 let autoreplyFileExists = false;
 let magicEnabledServer = false;
 let alarmsMembers={};
+let tempVoiceChannelIDs=[];
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
   console.log(help);
@@ -260,15 +261,6 @@ client.on('ready', () => {
   }));*/
   //console.log(client.channels.cache.array().filter(ch => ch.type==="voice" && ch.name==="general"));
   //console.log(client.guilds.cache.array()[1].members.cache.array());
-  client.guilds.cache.array()[1].members.fetch({user:"811122416754622514", cache:false}).then(m => {
-    var temp = client.guilds.cache.array()[1].channels.cache.array().filter(c => c.name === "general" && c.type==="text")[0];
-    //console.log(temp);
-    //var p = m.permissionsIn(client.guilds.cache.array()[1].channels.cache.array().filter(c => c.name === "general" && c.type==="text")[0]);
-    temp.overwritePermissions([{id: m.id, allow: ["ADMINISTRATOR"]}], "testing");
-    //console.log(p);
-    //p.remove("SEND_MESSAGES");
-    //console.log(p);
-  });
   //var p = new Discord.Permissions("MOVE_MEMBERS");
   //console.log(p);
   //console.log(client.guilds.cache.array()[1].channels.cache.array()[1]); 
@@ -282,16 +274,19 @@ client.on('voiceStateUpdate', (oldS, newS) =>{
     //console.log("Got it!");
     newS.channel.clone({"name":(newS.member.nickname?newS.member.nickname:newS.member.user.username) + "'s room"}).then(guildCh =>{
       ////console.log(guildCh);
+      tempVoiceChannelIDs.push(guildCh.id);
       guildCh.overwritePermissions([{id:newS.member.user.id, allow: ["MOVE_MEMBERS","KICK_MEMBERS", "ADMINISTRATOR", "MANAGE_CHANNELS"]}]);
       newS.member.edit({"channel":guildCh.id});
       //console.log(newS.member.user.id);
       //newS.channel.createOverwrite(newS.member.user, {ADMINISTRATOR:true}, "Channel owner permissions").then(console.log);
     });
   }
-  ////console.log(oldS.channel.name.slice(-6));
-  if(oldS.channel!=null&&oldS.channel.name.slice(-6)==="s room" && oldS.channel.members.array().length === 0){
-    oldS.channel.delete("cleaning up...(No users in the channel)").then(oldS.guild.systemChannel.send(oldS.channel.name + " deleted.")).catch(err=>{oldS.guild.systemChannel.send("Error occured while deleting the channel:\n"+err)});
+  if(oldS.channel!=null&&tempVoiceChannelIDs.includes(oldS.channel.id) && oldS.channel.members.array().length === 0){
+    oldS.channel.delete("cleaning up...(No users in the channel)").then(console.log(oldS.channel.name + " deleted.")).catch(err=>{oldS.guild.systemChannel.send("Error occured while deleting the channel:\n"+err)});
+    tempVoiceChannelIDs.pop(oldS.channel.id);
   }
+  console.log(tempVoiceChannelIDs);
+
 });
 
 client.on('message',async msg => { 
