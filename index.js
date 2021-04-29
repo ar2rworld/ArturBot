@@ -8,6 +8,7 @@ const ytdl = require("discord-ytdl-core");
 //var StringBuilder = require('stringbuilder');
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const request = require('request')
+const { exec } = require("child_process");
 
 //Notes:
 //811122416754622514 - 2Astana
@@ -168,7 +169,7 @@ let tempVoiceChannelIDs=[];
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
   console.log(help);
-  client.user.setActivity("!@help", {type : "PLAYING"}).then(p => console.log("Activity set to " + p.activities[0].name));
+  //client.user.setActivity("!@help", {type : "PLAYING"}).then(p => console.log("Activity set to " + p.activities[0].name));
   //console.log(client.guilds.cache.get("736262572076040322").members);
   //magic
   //autoreply.json file exists check
@@ -264,6 +265,17 @@ client.on('ready', () => {
   //var p = new Discord.Permissions("MOVE_MEMBERS");
   //console.log(p);
   //console.log(client.guilds.cache.array()[1].channels.cache.array()[1]); 
+  
+  //Monitoring of RAM in bot activity
+  client.setInterval(()=>{
+    exec("free -m", (error, stdout, stderr) =>{
+    if(!error){
+      let out=stdout.split("         ");
+      let act=(out.slice(3,5) + "~"+ out.slice(9,11))
+      client.user.setActivity(act, {type : "PLAYING"})
+    }
+  })
+  }, 5*60000);
 });
 
 //check member joining specific voice channel to create a new room
@@ -285,7 +297,7 @@ client.on('voiceStateUpdate', (oldS, newS) =>{
     oldS.channel.delete("cleaning up...(No users in the channel)").then(console.log(oldS.channel.name + " deleted.")).catch(err=>{oldS.guild.systemChannel.send("Error occured while deleting the channel:\n"+err)});
     tempVoiceChannelIDs.pop(oldS.channel.id);
   }
-  console.log(tempVoiceChannelIDs);
+  //console.log(tempVoiceChannelIDs);
 
 });
 
