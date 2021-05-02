@@ -256,14 +256,9 @@ client.on('ready', () => {
     }
     //console.log(alarmsMembers);
   }, 60000);
-  /*console.log(client.users.fetch('811122416754622514').then(i=>{
-    console.log(i);
-  }));*/
-  //console.log(client.channels.cache.array().filter(ch => ch.type==="voice" && ch.name==="general"));
-  //console.log(client.guilds.cache.array()[1].members.cache.array());
-  //var p = new Discord.Permissions("MOVE_MEMBERS");
-  //console.log(p);
-  //console.log(client.guilds.cache.array()[1].channels.cache.array()[1]); 
+
+  //console.log(client.guilds.cache.array()[1].channels.cache.array()); //[1]
+  //client.guilds.cache.fetch()
   
   //Monitoring of RAM in bot activity
   client.setInterval(()=>{
@@ -641,6 +636,26 @@ client.on('message',async msg => {
         //console.log(msg.author.id);
       }else{
         msg.channel.send("My dear, you can only use this command in direct messages, so don't interupt others)thank you");
+      }
+    }else if(tokens[0]===prefix+"create_room"){
+      if(tokens.length===2){
+        //console.log(tokens[1])
+        let channels=msg.guild.channels.cache.array().filter(c =>c.name === msg.content.split(" ")[1])
+        if(channels.length!=1 || channels[0].type!=="voice" || msg.member.hasPermission("MANAGE_CHANNELS")===false){
+          msg.channel.send("Invalid channel(one channel case sensative name, type === voice, manage channels permission)");
+          return
+        }else{
+          if(config.create_roomVoiceChannels.includes(channels[0].id)){
+            config.create_roomVoiceChannels.pop(channels[0].id);
+            msg.channel.send("Poped out from the stack");
+          }else{
+            config.create_roomVoiceChannels.push(channels[0].id);
+            msg.channel.send("Pushed to the stack");
+          }
+        }
+        //console.log(channels)
+      }else{
+        msg.channel.send("Invalid syntax: prefix+create_room <Name of channel case sensitive>");
       }
     }//next command
     

@@ -24,14 +24,14 @@ There is 5 conditions you need to keep in mind:
 4)Skill you using is not in CD
 5)User which is your target has a magic licence as well
 //Magic commands
-prefix magic <on/off> <Your magic name> //to get a licence
-prefix k <tag user/users> //to kick user/users from the voice channel
-prefix m  <tag user/users> //to server mute user
-prefix um   <tag user/users> //to unmute user
-prefix clean //cleans 1-100 last messages not older than two weeks
-prefix room_for_user <name of the voice channel> //when user enters this channel bot creates a separate voice channel, moves him/her to the new room, if room ends on \"s room\" and has no users in it bot deletes the room
-prefix alarms <number of hours> <number of minutes> [you message(optional)] use it in direct messages, bot sends you in DM your custom message or default message every <number of minutes> during some <number of hours> you mentioned
-
+[prefix]magic <on/off> <Your magic name> //to get a licence
+[prefix]k <tag user/users> //to kick user/users from the voice channel
+[prefix]m  <tag user/users> //to server mute user
+[prefix]um   <tag user/users> //to unmute user
+[prefix]clean //cleans 1-100 last messages not older than two weeks
+[prefix]room_for_user <name of the voice channel> //when user enters this channel bot creates a separate voice channel, moves him/her to the new room, if room ends on \"s room\" and has no users in it bot deletes the room
+[prefix]alarms <number of hours> <number of minutes> [you message(optional)] use it in direct messages, bot sends you in DM your custom message or default message every <number of minutes> during some <number of hours> you mentioned
+[prefix]create_room <Name of channel (case sensitive)>
 v0.03
 
 Thanks to Artur,Aman(they are real sweet hearts)
