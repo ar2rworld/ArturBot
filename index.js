@@ -160,8 +160,7 @@ let attempts = 0;
 let magicMembers = {};
 //bot vars
 const prefix = config.prefix;
-let help = "Hey my friend, Commands I have for now:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game\n!@match <name1> <name2> [any optinal args]\n!@happy-birthday <name>\n!@autoreply //everytime anyone mentions your in the message, bot replies with default message \n->!@autoreply <on/off> //changes your autoreply status\n->!@autoreply <on/off> <your message> //updates autoreply status and sets messages to provided\n->!@autoreply <your message> //changes your autoreply message and sets status to \"on\"\n!@meme //sends a meme from local storage\n->!@meme //if picture is attached to the message it will be saved to the local storage\n->!@meme <direct link to an image> //donwloads image from web into the storage, supports many links separated by single SPACE\n" + prefix + "love //returns how much love u need\n//Now you can server mute and kick another user from the voice channel...Magic\nThere is 5 conditions you need to keep in mind:\n1)Server is magic enabled\n2)You have a magic licence\n3)You have enough mana\n4)Skill you using is not in CD\n5)User which is your target has a magic licence as well\n//Magic commands\n" + prefix + "magic <on/off> <Your magic name> //to get a licence\n" + prefix+ config.memberVoiceKick + " <tag user/users> //to kick user/users from the voice channel\n" + prefix + config.memberVoiceMute+ " <tag user/users> //to server mute user\n" + prefix + config.memberVoiceUnmute + " <tag user/users> //to unmute user\n" + prefix+"clean //cleans 1-100 last messages not older than two weeks\n" +prefix+ "room_for_user <name of the voice channel> //when user enters this channel bot creates a separate voice channel, moves him/her to the new room, if room ends on \"s room\" and has no users in it bot deletes the room\n" +prefix+"alarms <number of hours> <number of minutes> [you message(optional)] \nv0.03\n\nThanks to Artur,Aman(they are real sweet hearts)\nhttps://github.com/ar2rworld/ArturBot\n";
-////use it in direct messages, bot sends you in DM your custom message or default message every <number of minutes> during some <number of hours> you mentioned
+let help = "Hello dear, my creators moved docs here https://github.com/ar2rworld/ArturBot";
 let autoreplyFileExists = false;
 let magicEnabledServer = false;
 let alarmsMembers={};
@@ -275,14 +274,14 @@ client.on('ready', () => {
       client.user.setActivity(act, {type : "PLAYING"})
     }
   })
-  }, 5*60000);
+  }, 60000);
 });
 
 //check member joining specific voice channel to create a new room
 //https://discord.js.org/#/docs/main/stable/typedef/GuildMemberEditData
 client.on('voiceStateUpdate', (oldS, newS) =>{
   //console.log( newS.channelID);
-  if( newS.channelID === config.create_roomVoiceChannel){
+  if(config.create_roomVoiceChannels.includes(newS.channelID)){
     //console.log("Got it!");
     newS.channel.clone({"name":(newS.member.nickname?newS.member.nickname:newS.member.user.username) + "'s room"}).then(guildCh =>{
       ////console.log(guildCh);
