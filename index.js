@@ -638,9 +638,8 @@ client.on('message',async msg => {
         msg.channel.send("My dear, you can only use this command in direct messages, so don't interupt others)thank you");
       }
     }else if(tokens[0]===prefix+"create_room"){
-      if(tokens.length===2){
         //console.log(tokens[1])
-        let channels=msg.guild.channels.cache.array().filter(c =>c.name === msg.content.split(" ")[1])
+        let channels=msg.guild.channels.cache.array().filter(c =>c.name === msg.content.split(" ").slice(1).join(" "))
         if(channels.length!=1 || channels[0].type!=="voice" || msg.member.hasPermission("MANAGE_CHANNELS")===false){
           msg.channel.send("Invalid channel(one channel case sensative name, type === voice, manage channels permission)");
           return
@@ -653,10 +652,6 @@ client.on('message',async msg => {
             msg.channel.send("Pushed to the stack");
           }
         }
-        //console.log(channels)
-      }else{
-        msg.channel.send("Invalid syntax: prefix+create_room <Name of channel case sensitive>");
-      }
     }//next command
     
   }
