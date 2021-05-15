@@ -10,6 +10,7 @@ var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const request = require('request')
 const { exec } = require("child_process");
 
+const redis=require( './connectRedis.js');
 //Notes:
 //811122416754622514 - 2Astana
 //
@@ -165,29 +166,24 @@ let autoreplyFileExists = false;
 let magicEnabledServer = false;
 let alarmsMembers={};
 let tempVoiceChannelIDs=[];
+var redisConnected=false;
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
   console.log(help);
-  //client.user.setActivity("!@help", {type : "PLAYING"}).then(p => console.log("Activity set to " + p.activities[0].name));
+  redis.checkR().then(r=>{
+    console.log(r+ " redisConnected");
+    if(r==="PONG"){
+      client.user.setActivity("redis connected", {type : "PLAYING"}).then(p => console.log("Activity set to " + p.activities[0].name));
+      redisConnected=true;
+    }
+      }).catch(r=>{
+        console.log(r + " catch redis is not Connected");
+      redisConnected=false;
+      client.user.setActivity("redis is not connected", {type : "PLAYING"}).then(p => console.log("Activity set to " + p.activities[0].name));
+        });
   //console.log(client.guilds.cache.get("736262572076040322").members);
   //magic
-  //autoreply.json file exists check
-  var f = "autoreply.json";
-  if(fs.existsSync("./" + f)){
-    console.log(f+ " file does exist");
-    autoreplyFileExists = true; 
-  }else{
-    console.log(f+ " file does not exist");
-    var data = {"users" : {}};
-    fs.writeFile(f, JSON.stringify(data), function(err){
-          if(err){
-            console.log(err);
-          }else{
-            console.log(f + " file created");
-            autoreplyFileExists = true; 
-          }
-        });
-  }
+
   //alarmsMembers file check
   if(fs.existsSync("./" + config.alarmsMembersFile)){
     console.log(config.alarmsMembersFile+ " file does exist");
@@ -266,7 +262,7 @@ client.on('ready', () => {
     if(!error){
       let out=stdout.split("         ");
       let act=(out.slice(3,5) + "~"+ out.slice(9,11))
-      client.user.setActivity(act, {type : "PLAYING"})
+      client.user.setActivity(act+"/r"+(redisConnected?"+":"-"), {type : "PLAYING"})
     }
   })
   }, 60000);
@@ -276,23 +272,28 @@ client.on('ready', () => {
 //https://discord.js.org/#/docs/main/stable/typedef/GuildMemberEditData
 client.on('voiceStateUpdate', (oldS, newS) =>{
   //console.log( newS.channelID);
-  if(config.create_roomVoiceChannels.includes(newS.channelID)){
-    //console.log("Got it!");
-    newS.channel.clone({"name":(newS.member.nickname?newS.member.nickname:newS.member.user.username) + "'s room"}).then(guildCh =>{
-      ////console.log(guildCh);
-      tempVoiceChannelIDs.push(guildCh.id);
-      guildCh.overwritePermissions([{id:newS.member.user.id, allow: ["MOVE_MEMBERS","KICK_MEMBERS", "ADMINISTRATOR", "MANAGE_CHANNELS"]}]);
-      newS.member.edit({"channel":guildCh.id});
-      //console.log(newS.member.user.id);
-      //newS.channel.createOverwrite(newS.member.user, {ADMINISTRATOR:true}, "Channel owner permissions").then(console.log);
+  redis.containsInList("create_room_channels", newS.channelID).then(r=>{
+        if(r!==null){
+          redis.incr("create_room_channels_created");
+          newS.channel.clone({"name":(newS.member.nickname?newS.member.nickname:newS.member.user.username) + "'s room"}).then(guildCh =>{
+          redis.pushToList("tempVoiceChannelIDs", guildCh.id);
+          guildCh.overwritePermissions([{id:newS.member.user.id, allow: ["MOVE_MEMBERS","KICK_MEMBERS", "ADMINISTRATOR", "MANAGE_CHANNELS"]}]);
+          newS.member.edit({"channel":guildCh.id});
+          });
+        }
+  });
+  if(oldS.channel!=null && oldS.channel.members.array().length === 0){
+    redis.containsInList("tempVoiceChannelIDs", oldS.channel.id).then(r=>{
+      if(r!==null){
+        oldS.channel.delete("REDISpart: cleaning up...(No users in the channel)").then(console.log(oldS.channel.name + " deleted.")).catch(err=>{oldS.guild.systemChannel.send("Error occured while deleting the channel:\n"+err)});
+        redis.removeFromList("tempVoiceChannelIDs", oldS.channel.id);
+      }
+    }).catch(r=>{
+      console.log("redis error:291\n" + r);
     });
   }
-  if(oldS.channel!=null&&tempVoiceChannelIDs.includes(oldS.channel.id) && oldS.channel.members.array().length === 0){
-    oldS.channel.delete("cleaning up...(No users in the channel)").then(console.log(oldS.channel.name + " deleted.")).catch(err=>{oldS.guild.systemChannel.send("Error occured while deleting the channel:\n"+err)});
-    tempVoiceChannelIDs.pop(oldS.channel.id);
-  }
-  //console.log(tempVoiceChannelIDs);
-
+  //###redis
+  //console.log(newS);
 });
 
 client.on('message',async msg => { 
@@ -301,10 +302,13 @@ client.on('message',async msg => {
   if(inp.startsWith(prefix)){ 
     var tokens = inp.split(" ");
     if(tokens[0] === prefix+"help"){
+      if(redisConnected)redis.incr("help_command");
       msg.reply(help);
     }else if(tokens[0] === prefix+"changeava"){
+      if(redisConnected)redis.incr("changeave_command");
       client.user.setAvatar('https://random-d.uk/api/randomimg').then(msg.reply('Image is set, my friend, it is always good to have something dynemic =)')).catch(console.error);
     }else if(tokens[0] === prefix+"isthebest"){
+      if(redisConnected)redis.incr("isthebest_command");
       const tempInp = inp.split(' ');
       if(tempInp.length === 2){
         const val = getASCIIsum(tempInp[1]) % 101;
@@ -315,6 +319,7 @@ client.on('message',async msg => {
         msg.reply("My dear, can you please use exactly one argument for this command? Check out help: "+ prefix + "help");
       }
     }else if(tokens[0] === prefix+"number"){
+      if(redisConnected)redis.incr("number_command");
       const tempArgs = inp.split(' ');
       if(gameStatus){
         if(tempArgs.length === 2){
@@ -366,6 +371,7 @@ client.on('message',async msg => {
     }else if(tokens[0] === prefix+"play"){
         ////console.log(msg.author.client.channels);
         ////console.log(client.channels.cache.filter(c => c.type === "voice").array()[0].id);
+        if(redisConnected)redis.incr("play_command");
         
         //check for permission
         //https://github.com/iCrawl/discord-music-bot
@@ -404,56 +410,43 @@ client.on('message',async msg => {
         }
       }
     }else if(tokens[0] === prefix+"autoreply"){
-      console.log(msg.author.id + " " + msg.author.username);
-      if(autoreplyFileExists){
-        let rawdata = fs.readFileSync('autoreply.json');
-        let ARusers = JSON.parse(rawdata);
+      if(redisConnected)redis.incr("autoreply_command");
+      //console.log(msg.author.id + " " + msg.author.username);
+      if(redisConnected){
         const temp = tokens;
-        //console.log(ARusers);
-        if(ARusers.users.hasOwnProperty(msg.author.id)){
-          if(temp.length === 1){
-            msg.reply("I see your command and your id in my log, please check the !@help");
-          }else if(temp.length === 2){
-            if(temp[1] === "on" || temp[1] === "off"){
-              ARusers.users[msg.author.id].status = temp[1];
-              msg.reply("You autoreply status updated");
-            }else{
-              ARusers.users[msg.author.id].status = "on";
-              ARusers.users[msg.author.id].message = msg.content.split(" ")[1];
-              msg.reply("Your autoreply status is on and message updated");
-            }
-          }else{
-            if(temp[1] === "on" || temp[1] === "off"){
-              ARusers.users[msg.author.id].status = temp[1];
-              ARusers.users[msg.author.id].message = msg.content.split(" ").slice(2).join(" ");
-              msg.reply("You autoreply status updated and is working now with your custom message");
-            }else{
-              ARusers.users[msg.author.id].status = "on";
-              ARusers.users[msg.author.id].message = msg.content.split(" ").slice(1).join(" ");
-              msg.reply("You autoreply status is on and is working now with your custom message");
-            }
-          }
-        }else{
-          ARusers.users[msg.author.id] = {
-            "status" : "on",
-            "message" : (temp.length === 1 ? "Hello, this is a default autoreply message, have a nice day!": msg.content.split(" ").slice(1).join(" "))
-          }
-          msg.reply("You autoreply created and is working now");
-        }
-        var out = "";
-        fs.writeFile("autoreply.json", JSON.stringify(ARusers), function(err){
-              if(err){
-                console.log(err);
-                out = err;
+        redis.containsInList("autoreply", msg.author.id).then(r=>{
+              if(r!==null){
+                if(temp.length===1){
+                  msg.channel.send("I see your command and your id in my log, please check the !@help");
+                }else if(temp.length===2){
+                  if(temp[1]==="off"){
+                    redis.removeFromList("autoreply",msg.author.id).then(r=>{
+                      msg.channel.send("You autoreply status is off now.");
+                    });
+                  }else{
+                    redis.setValue(msg.author.id+"_autoreply",temp[1]);
+                    msg.channel.send("You autoreply message(word) updated");
+                  }
+                }else{
+                  redis.setValue(msg.author.id+"_autoreply", msg.content.split(" ").slice(1).join(" "));
+                  msg.channel.send("You autoreply message updated");
+                }
+              }else{
+                redis.pushToList("autoreply", msg.author.id);
+                if(temp.length===1){
+                  redis.setValue(msg.author.id+"_autoreply", "Hello, this is a default autoreply message, have a nice day!");
+                  msg.channel.send("You autoreply created and is working now");
+                }else{
+                  redis.setValue(msg.author.id+"_autoreply", msg.content.split(" ").slice(1).join(" "));
+                  msg.channel.send("You autoreply custome message created");
+                }
               }
             });
-        if(out){
-          msg.reply("Errors occured while writing .json to file:\n" + out);
-        }
       }else{
-        msg.reply("autoreply function is not available, as file does not exist");
+        msg.channel.send("redis disconnected(");
       }
     }else if(tokens[0] === prefix+"meme"){
+      if(redisConnected)redis.incr("meme_command");
       if(msg.attachments.array().length>0 || tokens.length > 1){
       const atts = msg.attachments.array();
       if(atts.length > 0){
@@ -490,6 +483,7 @@ client.on('message',async msg => {
         });
       }
     }else if(tokens[0] === prefix+"rip"){
+      if(redisConnected)redis.incr("rip_command");
       msg.channel.send("Death is worth living, and love is worth the wait!\n@V. Tsoy");
     }
     else if(tokens[0] === prefix+config.memberVoiceKick && magicEnabledServer){
@@ -554,6 +548,7 @@ client.on('message',async msg => {
       msg.member.voice.setMute(false);
       }
     }else if(tokens[0] === prefix+"magic"){
+      if(redisConnected)redis.incr("magic_command");
       var out="";
       var id = msg.author.id;
       if(!magicMembers.hasOwnProperty(id)){
@@ -587,27 +582,12 @@ client.on('message',async msg => {
       }
       //console.log(magicMembers);
     }else if(tokens[0] === prefix + "love"){
+      if(redisConnected)redis.incr("love_command");
       const a ="💋 💋 💋 💋 💋 💋 💋 💋 💋 💋 💋 💌 💌 💌 💌 💌 💌 💌 💌 💌 💌 💌 💘 💘 💘 💘 💘 💘 💘 💘 💘 💘 💘 💝 💝 💝 💝 💝 💝 💝 💝 💝 💝 💝 💖 💖 💖 💖 💖 💖 💖 💖 💖 g 💖 💗 💗 💗 💗     💗 💗 💗 💗 💗 💗 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💞 💞 💞 💞 💞 💞💞 💞 💞 💞 💕 💕 💕 💕 💕 💕 💕 💕 💕 💕 💕 💟 💟 💟 💟 💟 💟 💟 💟 💟 💟 ❣ ❣ ❣ ❣ ❣ ❣ ❣ ❣ 💔 💔 💔 💔 💔     💔 💔 💔 💔 💔 💔 🔥 🔥 ⊛"
       b = a.split(" ");
       msg.channel.send(b[Math.floor(Math.random()*b.length)]);
-    }else if(tokens[0] === prefix+"room_for_user"){
-      if(msg.channel.type==="text" && msg.author.id === msg.guild.ownerID){
-        if(config.create_roomVoiceChannel){
-          config.create_roomVoiceChannel = 0;
-        }else{
-          var channel = msg.guild.channels.cache.array().filter(ch => ch.name === tokens[1]);
-          if(channel.length===1){
-            channel = channel[0];
-            config.create_roomVoiceChannel = channel.id;
-          }else{
-            msg.channel.send("Invalid channel");
-          }
-          //console.log(channel);
-        }
-      }else{
-        msg.channel.send("You don't have permission for this command");
-      }
     }else if(tokens[0]===prefix+"clean"){
+      if(redisConnected)redis.incr("clean_command");
       var n = Number(tokens[1]);
       if(tokens[1] !=null){
         n=(n?n>100?100:n:1);
@@ -615,6 +595,7 @@ client.on('message',async msg => {
       } 
     }else if(tokens[0]===prefix+"alarms"){
       if(msg.channel.type==="dm"){
+        if(redisConnected)redis.incr("alarms_command");
         if(tokens.length>=3){
           var hours = tokens[1].replace(/[a-zA-Z\W_]+/gi,"");
           var often = tokens[2].replace(/[a-zA-Z\W_]+/gi,"");
@@ -638,38 +619,40 @@ client.on('message',async msg => {
         msg.channel.send("My dear, you can only use this command in direct messages, so don't interupt others)thank you");
       }
     }else if(tokens[0]===prefix+"create_room"){
+        if(redisConnected)redis.incr("create_room_command");
+        //redis.containsInList("create_room_channels", newS.channelID).then(r=>{
+        //redis.containsInList("tempVoiceChannelIDs", old.channel.id).then(r=>{
         //console.log(tokens[1])
         let channels=msg.guild.channels.cache.array().filter(c =>c.name === msg.content.split(" ").slice(1).join(" "))
         if(channels.length!=1 || channels[0].type!=="voice" || msg.member.hasPermission("MANAGE_CHANNELS")===false){
           msg.channel.send("Invalid channel(one channel case sensative name, type === voice, manage channels permission)");
           return
         }else{
-          if(config.create_roomVoiceChannels.includes(channels[0].id)){
-            config.create_roomVoiceChannels.pop(channels[0].id);
-            msg.channel.send("Poped out from the stack");
-          }else{
-            config.create_roomVoiceChannels.push(channels[0].id);
-            msg.channel.send("Pushed to the stack");
-          }
+          redis.containsInList("create_room_channels", channels[0].id).then(r=>{
+              if(r===null){
+                redis.pushToList("create_room_channels", channels[0].id);  
+                msg.channel.send("Pushed to the stack(didn't check promise)");
+              }else{
+                redis.removeFromList("create_room_channels", channels[0].id);
+                msg.channel.send("Poped out from the stack(didn't check promise)");
+              }
+            });
         }
     }//next command
     
   }
-
-
   if(msg.channel.type === "text" && !msg.author.equals(client.user) && msg.mentions.members.array().length > 0){
     //console.log(msg.author.id + " " + msg.author.discriminator + " "); 
     const mentionedIDs = msg.mentions.members.array();
-    let rawdata = fs.readFileSync('autoreply.json');
-    let ARusers = JSON.parse(rawdata);
     for(let i=0; i < mentionedIDs.length; i+=1){
       const userID = mentionedIDs[i].user.id;
-      //console.log(userID+ " in the log? " + ARusers.users.hasOwnProperty(userID));
-      if(ARusers.users.hasOwnProperty(userID)){
-        if(ARusers.users[userID].status === "on"){
-           msg.reply("Autoreply from " + mentionedIDs[i].user.username + ":\n" + ARusers.users[userID].message); 
-        }
-      }
+      redis.containsInList("autoreply", userID).then(r=>{
+            if(r!==null){
+              redis.getValueP(userID+"_autoreply").then(r=>{
+                    msg.channel.send( "Autoreply from " + mentionedIDs[i].user.username + ":\n" + r);
+                  });
+            }
+          });
     }
   }
 

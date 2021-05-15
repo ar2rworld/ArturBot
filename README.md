@@ -9,8 +9,8 @@ Hey my friend, Commands I have for now:
 !@match <name1> <name2> [any optinal args]
 !@happy-birthday <name>
 !@autoreply //everytime anyone mentions your in the message, bot replies with default message 
-->!@autoreply <on/off> //changes your autoreply status
-->!@autoreply <on/off> <your message> //updates autoreply status and sets messages to provided
+->!@autoreply //sets default message and status to ON
+->!@autoreply off //changes your autoreply status to OFF
 ->!@autoreply <your message> //changes your autoreply message and sets status to \"on\"
 !@meme //sends a meme from local storage
 ->!@meme //if picture is attached to the message it will be saved to the local storage
@@ -29,9 +29,9 @@ There is 5 conditions you need to keep in mind:
 [prefix]m  <tag user/users> //to server mute user
 [prefix]um   <tag user/users> //to unmute user
 [prefix]clean //cleans 1-100 last messages not older than two weeks
-[prefix]room_for_user <name of the voice channel> //when user enters this channel bot creates a separate voice channel, moves him/her to the new room, if room ends on \"s room\" and has no users in it bot deletes the room
+[prefix]room_for_user <name of the voice channel> //deprecated
 [prefix]alarms <number of hours> <number of minutes> [you message(optional)] use it in direct messages, bot sends you in DM your custom message or default message every <number of minutes> during some <number of hours> you mentioned
-[prefix]create_room <Name of channel (case sensitive)>
+[prefix]create_room <Name of channel (case sensitive)> //when user enters this channel bot creates a separate voice channel, moves him/her to the new room, if room ends on \"s room\" and has no users in it bot deletes the room
 v0.03
 
 Thanks to Artur,Aman(they are real sweet hearts)
