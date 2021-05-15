@@ -272,6 +272,7 @@ client.on('ready', () => {
 //https://discord.js.org/#/docs/main/stable/typedef/GuildMemberEditData
 client.on('voiceStateUpdate', (oldS, newS) =>{
   //console.log( newS.channelID);
+  if(newS.channelID!==null){
   redis.containsInList("create_room_channels", newS.channelID).then(r=>{
         if(r!==null){
           redis.incr("create_room_channels_created");
@@ -282,6 +283,7 @@ client.on('voiceStateUpdate', (oldS, newS) =>{
           });
         }
   });
+  }
   if(oldS.channel!=null && oldS.channel.members.array().length === 0){
     redis.containsInList("tempVoiceChannelIDs", oldS.channel.id).then(r=>{
       if(r!==null){
