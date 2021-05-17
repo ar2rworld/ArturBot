@@ -3,8 +3,6 @@ const client = new Discord.Client();
 const { MessageAttachment } = require('discord.js');
 const config = require('./config.json');
 const fs = require('fs'); //readFile function 
-//const ytdl = require('ytdl-core-discord');
-const ytdl = require("discord-ytdl-core");
 //var StringBuilder = require('stringbuilder');
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const request = require('request')
@@ -370,47 +368,6 @@ client.on('message',async msg => {
       }else{
         msg.reply("Invalid input: !@happy-birthday <name>");
       }
-    }else if(tokens[0] === prefix+"play"){
-        ////console.log(msg.author.client.channels);
-        ////console.log(client.channels.cache.filter(c => c.type === "voice").array()[0].id);
-        if(redisConnected)redis.incr("play_command");
-        
-        //check for permission
-        //https://github.com/iCrawl/discord-music-bot
-        const { channel } = msg.member.voice;
-    		if (!channel) return msg.channel.send('I\'m sorry but you need to be in a voice channel to play music!');
-		    const permissions = channel.permissionsFor(msg.client.user);
-		    if (!permissions.has('CONNECT')) return msg.channel.send('I cannot connect to your voice channel, make sure I have the proper permissions!');
-		    if (!permissions.has('SPEAK')) return msg.channel.send('I cannot speak in this voice channel, make sure I have the proper permissions!');
-
-        try{
-          var connection = await channel.join();
-        }catch(e){
-          return msg.channel.send("ERROR:\n" + e);
-        }
-        const dispatcher = connection.play('/ded_maxim.mp3')//ytdl("https://www.youtube.com/watch?v=fCQG9oujWEQ"))
-          .on('finish',() => {
-              //console.log("finished");
-              //channel.leave();
-              })
-          .on("error", error =>{
-            msg.channel.send("Dispatcher error:\n" + error);
-          });
-        dispatcher.setVolumeLogarithmic(5/5);
-
-          /*connection.on("debug" , m =>{
-                //console.log("d " + m);
-                });
-          connection.on("error" , m =>{
-                //console.log("er " + m);
-                });*/
-    }else if(tokens[0] === prefix+"dis"){
-      var cons = client.voice.connections.array();
-      if(cons.length>0){
-        for(let i=0; i<cons.length; i+=1){
-          cons[i].disconnect();
-        }
-      }
     }else if(tokens[0] === prefix+"autoreply"){
       if(redisConnected)redis.incr("autoreply_command");
       //console.log(msg.author.id + " " + msg.author.username);
@@ -618,6 +575,7 @@ client.on('message',async msg => {
         }
         //console.log(msg.author.id);
       }else{
+        if(redisConnected)redis.incr("else_statement_reached_command");
         msg.channel.send("My dear, you can only use this command in direct messages, so don't interupt others)thank you");
       }
     }else if(tokens[0]===prefix+"create_room"){
@@ -640,6 +598,9 @@ client.on('message',async msg => {
               }
             });
         }
+    }else{
+
+      msg.channel.send("I see that you trying to talk to me, but I'm talking in JS and you are in C++");
     }//next command
     
   }
