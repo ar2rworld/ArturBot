@@ -3,13 +3,14 @@ const client = new Discord.Client();
 const { MessageAttachment } = require('discord.js');
 const config = require('./config.json');
 const fs = require('fs'); //readFile function 
-//const ytdl = require('ytdl-core-discord');
-const ytdl = require("discord-ytdl-core");
 //var StringBuilder = require('stringbuilder');
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const request = require('request')
+const { exec } = require("child_process");
 
+const redis=require( './connectRedis.js');
 //Notes:
+//811122416754622514 - 2Astana
 //
 
 /*Used methods:*/
@@ -35,19 +36,19 @@ const updateMana = member =>{
   return tempMana;
 }
 const checkMemberMagic = (msg, spell, targetID) =>{
-    console.log(magicMembers);
+    //console.log(magicMembers);
     const id = msg.author.id;
     const member = magicMembers[id];
     if(spell === config.memberVoiceKick){
       if(magicMembers.hasOwnProperty(id)===false){
-        console.log("1heckMemberMagic functio");
+        //console.log("1heckMemberMagic functio");
         return "You don't have a magic license";
       }
       if(magicMembers[id].status==="off"){
         return "You magic status is off, you probably wanna turn it on, check out " +prefix+ "help";
       }
       if(magicMembers.hasOwnProperty(targetID)===false){
-        console.log("4heckMemberMagic functio");
+        //console.log("4heckMemberMagic functio");
         return "Your target is not a wizard, so just let him/her go... Or motivate him/her to get a license";
       }
       if(magicMembers[targetID].status==="off"){
@@ -58,14 +59,14 @@ const checkMemberMagic = (msg, spell, targetID) =>{
         tempMana = 100;
       }
       if(tempMana <= config.costMemberVoiceKick){
-        console.log("2heckMemberMagic functio");
-        console.log(tempMana);
+        //console.log("2heckMemberMagic functio");
+        //console.log(tempMana);
         return "Not enough mana";
       }
       var cd = Date.now() - magicMembers[id][config.memberVoiceKick];
       //console.log("CD: " + cd + ` Date.now(): ${Date.now()} - lastUsed: ${magicMembers[id][config.memberVoiceKick]}`);
       if(cd < config.CDmemberVoiceKick){
-        console.log("3heckMemberMagic functio");
+        //console.log("3heckMemberMagic functio");
         return `CD(${config.CDmemberVoiceKick - cd}), not ready yet`;
       }
       
@@ -76,14 +77,14 @@ const checkMemberMagic = (msg, spell, targetID) =>{
       return "";
     }else if(spell === config.memberVoiceMute){
       if(magicMembers.hasOwnProperty(id)===false){
-        console.log("1heckMemberMagic functio");
+        //console.log("1heckMemberMagic functio");
         return "You don't have a magic license";
       }
       if(magicMembers[id].status==="off"){
         return "You magic status is off, you probably wanna turn it on, check out " +prefix+ "help";
       }
       if(magicMembers.hasOwnProperty(targetID)===false){
-        console.log("4heckMemberMagic functio");
+        //console.log("4heckMemberMagic functio");
         return "Your target is not a wizard, so just let him/her go... Or motivate him/her to get a license";
       }
       if(magicMembers[targetID].status==="off"){
@@ -99,9 +100,9 @@ const checkMemberMagic = (msg, spell, targetID) =>{
         return "Not enough mana";
       }
       var cd = Date.now() - magicMembers[id][config.memberVoiceMute];
-      console.log("CD: " + cd + ` Date.now(): ${Date.now()} - lastUsed: ${magicMembers[id][config.memberVoiceMute]}`);
+      //console.log("CD: " + cd + ` Date.now(): ${Date.now()} - lastUsed: ${magicMembers[id][config.memberVoiceMute]}`);
       if(cd < config.CDmemberVoiceMute){
-        console.log("3heckMemberMagic functio");
+        //console.log("3heckMemberMagic functio");
         return `CD(${config.CDmemberVoiceMute - cd}), not ready yet`;
       }
       magicMembers[id].mana = tempMana;
@@ -111,7 +112,7 @@ const checkMemberMagic = (msg, spell, targetID) =>{
       return "";
     }else if(spell === config.memberVoiceUnmute){
       if(magicMembers.hasOwnProperty(id)===false){
-        console.log("1heckMemberMagic functio");
+        //console.log("1heckMemberMagic functio");
         return "You don't have a magic license";
       }
       var tempMana = updateMana(member); 
@@ -119,18 +120,18 @@ const checkMemberMagic = (msg, spell, targetID) =>{
         tempMana = 100;
       }
       if(tempMana <= config.costMemberVoiceUnmute){
-        console.log("2heckMemberMagic functio");
-        console.log(tempMana);
+        //console.log("2heckMemberMagic functio");
+        //console.log(tempMana);
         return "Not enough mana";
       }
       var cd = Date.now() - magicMembers[id][config.memberVoiceUnmute];
-      console.log("CD: " + cd + ` Date.now(): ${Date.now()} - lastUsed: ${magicMembers[id][config.memberVoiceMute]}`);
+      ////console.log("CD: " + cd + ` Date.now(): ${Date.now()} - lastUsed: ${magicMembers[id][config.memberVoiceMute]}`);
       if(cd < config.CDmemberVoiceMute){
-        console.log("3heckMemberMagic functio");
+        ////console.log("3heckMemberMagic functio");
         return `CD(${config.CDmemberVoiceUnmute - cd}), not ready yet`;
       }
       if(magicMembers.hasOwnProperty(targetID)===false){
-        console.log("4heckMemberMagic functio");
+        ////console.log("4heckMemberMagic functio");
         return "Your target is not a wizard, so just let him/her go... Or motivate him/her to get a license";
       }
       magicMembers[id].mana = tempMana;
@@ -158,34 +159,30 @@ let attempts = 0;
 let magicMembers = {};
 //bot vars
 const prefix = config.prefix;
-let help = "Hey my friend, Commands I have for now:\n!@changeAva\n!@isTheBest <name>\n!@number //Guess my number in range of [0, 99]\n->!@number <your number> //replies you if number is bigger or smaller\n->!@number new //new game\n!@match <name1> <name2> [any optinal args]\n!@happy-birthday <name>\n!@autoreply //everytime anyone mentions your in the message, bot replies with default message \n->!@autoreply <on/off> //changes your autoreply status\n->!@autoreply <on/off> <your message> //updates autoreply status and sets messages to provided\n->!@autoreply <your message> //changes your autoreply message and sets status to \"on\"\n!@meme //sends a meme from local storage\n->!@meme //if picture is attached to the message it will be saved to the local storage\n->!@meme <direct link to an image> //donwloads image from web into the storage, supports many links separated by single SPACE\n" + prefix + "love //returns how much love u need\n//Now you can server mute and kick another user from the voice channel...Magic\nThere is 5 conditions you need to keep in mind:\n1)Server is magic enabled\n2)You have a magic licence\n3)You have enough mana\n4)Skill you using is not in CD\n5)User which is your target has a magic licence as well\n//Magic commands\n" + prefix + "magic <on/off> <Your magic name> //to get a licence\n" + prefix+ config.memberVoiceKick + " <tag user/users> //to kick user/users from the voice channel\n" + prefix + config.memberVoiceMute+ " <tag user/users> //to server mute user\n" + prefix + config.memberVoiceUnmute + " <tag user/users> //to unmute user\n" + prefix+"clean //cleans 1-100 last messages not older than two weeks\n" +prefix+ "room_for_user <name of the voice channel> //when user enters this channel bot creates a separate voice channel, moves him/her to the new room, if room ends on \"s room\" and has no users in it bot deletes the room\nv0.03\n\nThanks to Artur,Aman(they are real sweet hearts)\nhttps://github.com/ar2rworld/ArturBot\n";
+let help = "Hello dear, my creators moved docs here https://github.com/ar2rworld/ArturBot";
 let autoreplyFileExists = false;
 let magicEnabledServer = false;
 let alarmsMembers={};
+let tempVoiceChannelIDs=[];
+var redisConnected=false;
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
   console.log(help);
-  client.user.setActivity("!@help", {type : "PLAYING"}).then(p => console.log("Activity set to " + p.activities[0].name));
+  redis.checkR().then(r=>{
+    console.log(r+ " redisConnected");
+    if(r==="PONG"){
+      client.user.setActivity("redis connected", {type : "PLAYING"}).then(p => console.log("Activity set to " + p.activities[0].name));
+      redisConnected=true;
+    }
+      }).catch(r=>{
+        console.log(r + " catch redis is not Connected");
+      redisConnected=false;
+      client.user.setActivity("redis is not connected", {type : "PLAYING"}).then(p => console.log("Activity set to " + p.activities[0].name));
+        });
   //console.log(client.guilds.cache.get("736262572076040322").members);
   //magic
-  //autoreply.json file exists check
-  var f = "autoreply.json";
-  if(fs.existsSync("./" + f)){
-    console.log(f+ " file does exist");
-    autoreplyFileExists = true; 
-  }else{
-    console.log(f+ " file does not exist");
-    var data = {"users" : {}};
-    fs.writeFile(f, JSON.stringify(data), function(err){
-          if(err){
-            console.log(err);
-          }else{
-            console.log(f + " file created");
-            autoreplyFileExists = true; 
-          }
-        });
-  }
-  //alarmsMembers
+
+  //alarmsMembers file check
   if(fs.existsSync("./" + config.alarmsMembersFile)){
     console.log(config.alarmsMembersFile+ " file does exist");
     let rawdata = fs.readFileSync(config.alarmsMembersFile);
@@ -236,33 +233,67 @@ client.on('ready', () => {
       if(alarmsMembers[k].minBeforeSignal<=0){
         alarmsMembers[k].minBeforeSignal=alarmsMembers[k].often;
         alarmsMembers[k].times-=1;
+        var last=false;
+        var times=alarmsMembers[k].times;
+        var often=alarmsMembers[k].often;
+        var minBefore=alarmsMembers[k].minBeforeSignal;
+        var message=alarmsMembers[k].message;
         if(alarmsMembers[k].times<=0){
           delete alarmsMembers[k];
-
+          last=true;
         }
+        client.users.fetch(k).then(user =>{
+          user.send(`${(last?"Last message":("Messages left:"+String((times-1*often + Number(minBefore)))))} ${message}`);
+        })
         
       }
     }
     //console.log(alarmsMembers);
-  }, 1000);
-  console.log(client.users.fetch("635901894824558602").then(u => console.log(u)));
+  }, 60000);
+
+  //console.log(client.guilds.cache.array()[1].channels.cache.array()); //[1]
+  //client.guilds.cache.fetch()
+  
+  //Monitoring of RAM in bot activity
+  client.setInterval(()=>{
+    exec("free -m", (error, stdout, stderr) =>{
+    if(!error){
+      let out=stdout.split("         ");
+      let act=(out.slice(3,5) + "~"+ out.slice(9,11))
+      client.user.setActivity(act+"/r"+(redisConnected?"+":"-"), {type : "PLAYING"})
+    }
+  })
+  }, 60000);
 });
 
 //check member joining specific voice channel to create a new room
 //https://discord.js.org/#/docs/main/stable/typedef/GuildMemberEditData
 client.on('voiceStateUpdate', (oldS, newS) =>{
-  console.log( newS.channelID);
-  if( newS.channelID === config.create_roomVoiceChannel){
-    console.log("Got it!");
-    newS.channel.clone({"name":(newS.member.nickname?newS.member.nickname:newS.member.user.username) + "'s room"}).then(guildCh =>{
-      //console.log(guildCh);
-      newS.member.edit({"channel":guildCh.id});
+  //console.log( newS.channelID);
+  if(newS.channelID!==null){
+  redis.containsInList("create_room_channels", newS.channelID).then(r=>{
+        if(r!==null){
+          redis.incr("create_room_channels_created");
+          newS.channel.clone({"name":(newS.member.nickname?newS.member.nickname:newS.member.user.username) + "'s room"}).then(guildCh =>{
+          redis.pushToList("tempVoiceChannelIDs", guildCh.id);
+          guildCh.overwritePermissions([{id:newS.member.user.id, allow: ["MOVE_MEMBERS","KICK_MEMBERS", "ADMINISTRATOR", "MANAGE_CHANNELS"]}]);
+          newS.member.edit({"channel":guildCh.id});
+          });
+        }
+  });
+  }
+  if(oldS.channel!=null && oldS.channel.members.array().length === 0){
+    redis.containsInList("tempVoiceChannelIDs", oldS.channel.id).then(r=>{
+      if(r!==null){
+        oldS.channel.delete("REDISpart: cleaning up...(No users in the channel)").then(console.log(oldS.channel.name + " deleted.")).catch(err=>{oldS.guild.systemChannel.send("Error occured while deleting the channel:\n"+err)});
+        redis.removeFromList("tempVoiceChannelIDs", oldS.channel.id);
+      }
+    }).catch(r=>{
+      console.log("redis error:291\n" + r);
     });
   }
-  //console.log(oldS.channel.name.slice(-6));
-  if(oldS.channel!=null&&oldS.channel.name.slice(-6)==="s room" && oldS.channel.members.array().length === 0){
-    oldS.channel.delete("cleaning up...(No users in the channel)").then(oldS.guild.systemChannel.send(oldS.channel.name + " deleted.")).catch(err=>{oldS.guild.systemChannel.send("Error occured while deleting the channel:\n"+err)});
-  }
+  //###redis
+  //console.log(newS);
 });
 
 client.on('message',async msg => { 
@@ -271,10 +302,13 @@ client.on('message',async msg => {
   if(inp.startsWith(prefix)){ 
     var tokens = inp.split(" ");
     if(tokens[0] === prefix+"help"){
+      if(redisConnected)redis.incr("help_command");
       msg.reply(help);
     }else if(tokens[0] === prefix+"changeava"){
+      if(redisConnected)redis.incr("changeave_command");
       client.user.setAvatar('https://random-d.uk/api/randomimg').then(msg.reply('Image is set, my friend, it is always good to have something dynemic =)')).catch(console.error);
     }else if(tokens[0] === prefix+"isthebest"){
+      if(redisConnected)redis.incr("isthebest_command");
       const tempInp = inp.split(' ');
       if(tempInp.length === 2){
         const val = getASCIIsum(tempInp[1]) % 101;
@@ -285,6 +319,7 @@ client.on('message',async msg => {
         msg.reply("My dear, can you please use exactly one argument for this command? Check out help: "+ prefix + "help");
       }
     }else if(tokens[0] === prefix+"number"){
+      if(redisConnected)redis.incr("number_command");
       const tempArgs = inp.split(' ');
       if(gameStatus){
         if(tempArgs.length === 2){
@@ -333,97 +368,44 @@ client.on('message',async msg => {
       }else{
         msg.reply("Invalid input: !@happy-birthday <name>");
       }
-    }else if(tokens[0] === prefix+"play"){
-        //console.log(msg.author.client.channels);
-        //console.log(client.channels.cache.filter(c => c.type === "voice").array()[0].id);
-        
-        //check for permission
-        //https://github.com/iCrawl/discord-music-bot
-        const { channel } = msg.member.voice;
-    		if (!channel) return msg.channel.send('I\'m sorry but you need to be in a voice channel to play music!');
-		    const permissions = channel.permissionsFor(msg.client.user);
-		    if (!permissions.has('CONNECT')) return msg.channel.send('I cannot connect to your voice channel, make sure I have the proper permissions!');
-		    if (!permissions.has('SPEAK')) return msg.channel.send('I cannot speak in this voice channel, make sure I have the proper permissions!');
-
-        try{
-          var connection = await channel.join();
-        }catch(e){
-          return msg.channel.send("ERROR:\n" + e);
-        }
-        const dispatcher = connection.play('/ded_maxim.mp3')//ytdl("https://www.youtube.com/watch?v=fCQG9oujWEQ"))
-          .on('finish',() => {
-              console.log("finished");
-              //channel.leave();
-              })
-          .on("error", error =>{
-            msg.channel.send("Dispatcher error:\n" + error);
-          });
-        dispatcher.setVolumeLogarithmic(5/5);
-
-          /*connection.on("debug" , m =>{
-                console.log("d " + m);
-                });
-          connection.on("error" , m =>{
-                console.log("er " + m);
-                });*/
-    }else if(tokens[0] === prefix+"dis"){
-      var cons = client.voice.connections.array();
-      if(cons.length>0){
-        for(let i=0; i<cons.length; i+=1){
-          cons[i].disconnect();
-        }
-      }
     }else if(tokens[0] === prefix+"autoreply"){
-      console.log(msg.author.id + " " + msg.author.username);
-      if(autoreplyFileExists){
-        let rawdata = fs.readFileSync('autoreply.json');
-        let ARusers = JSON.parse(rawdata);
+      if(redisConnected)redis.incr("autoreply_command");
+      //console.log(msg.author.id + " " + msg.author.username);
+      if(redisConnected){
         const temp = tokens;
-        //console.log(ARusers);
-        if(ARusers.users.hasOwnProperty(msg.author.id)){
-          if(temp.length === 1){
-            msg.reply("I see your command and your id in my log, please check the !@help");
-          }else if(temp.length === 2){
-            if(temp[1] === "on" || temp[1] === "off"){
-              ARusers.users[msg.author.id].status = temp[1];
-              msg.reply("You autoreply status updated");
-            }else{
-              ARusers.users[msg.author.id].status = "on";
-              ARusers.users[msg.author.id].message = msg.content.split(" ")[1];
-              msg.reply("Your autoreply status is on and message updated");
-            }
-          }else{
-            if(temp[1] === "on" || temp[1] === "off"){
-              ARusers.users[msg.author.id].status = temp[1];
-              ARusers.users[msg.author.id].message = msg.content.split(" ").slice(2).join(" ");
-              msg.reply("You autoreply status updated and is working now with your custom message");
-            }else{
-              ARusers.users[msg.author.id].status = "on";
-              ARusers.users[msg.author.id].message = msg.content.split(" ").slice(1).join(" ");
-              msg.reply("You autoreply status is on and is working now with your custom message");
-            }
-          }
-        }else{
-          ARusers.users[msg.author.id] = {
-            "status" : "on",
-            "message" : (temp.length === 1 ? "Hello, this is a default autoreply message, have a nice day!": msg.content.split(" ").slice(1).join(" "))
-          }
-          msg.reply("You autoreply created and is working now");
-        }
-        var out = "";
-        fs.writeFile("autoreply.json", JSON.stringify(ARusers), function(err){
-              if(err){
-                console.log(err);
-                out = err;
+        redis.containsInList("autoreply", msg.author.id).then(r=>{
+              if(r!==null){
+                if(temp.length===1){
+                  msg.channel.send("I see your command and your id in my log, please check the !@help");
+                }else if(temp.length===2){
+                  if(temp[1]==="off"){
+                    redis.removeFromList("autoreply",msg.author.id).then(r=>{
+                      msg.channel.send("You autoreply status is off now.");
+                    });
+                  }else{
+                    redis.setValue(msg.author.id+"_autoreply",temp[1]);
+                    msg.channel.send("You autoreply message(word) updated");
+                  }
+                }else{
+                  redis.setValue(msg.author.id+"_autoreply", msg.content.split(" ").slice(1).join(" "));
+                  msg.channel.send("You autoreply message updated");
+                }
+              }else{
+                redis.pushToList("autoreply", msg.author.id);
+                if(temp.length===1){
+                  redis.setValue(msg.author.id+"_autoreply", "Hello, this is a default autoreply message, have a nice day!");
+                  msg.channel.send("You autoreply created and is working now");
+                }else{
+                  redis.setValue(msg.author.id+"_autoreply", msg.content.split(" ").slice(1).join(" "));
+                  msg.channel.send("You autoreply custome message created");
+                }
               }
             });
-        if(out){
-          msg.reply("Errors occured while writing .json to file:\n" + out);
-        }
       }else{
-        msg.reply("autoreply function is not available, as file does not exist");
+        msg.channel.send("redis disconnected(");
       }
     }else if(tokens[0] === prefix+"meme"){
+      if(redisConnected)redis.incr("meme_command");
       if(msg.attachments.array().length>0 || tokens.length > 1){
       const atts = msg.attachments.array();
       if(atts.length > 0){
@@ -460,6 +442,7 @@ client.on('message',async msg => {
         });
       }
     }else if(tokens[0] === prefix+"rip"){
+      if(redisConnected)redis.incr("rip_command");
       msg.channel.send("Death is worth living, and love is worth the wait!\n@V. Tsoy");
     }
     else if(tokens[0] === prefix+config.memberVoiceKick && magicEnabledServer){
@@ -524,6 +507,7 @@ client.on('message',async msg => {
       msg.member.voice.setMute(false);
       }
     }else if(tokens[0] === prefix+"magic"){
+      if(redisConnected)redis.incr("magic_command");
       var out="";
       var id = msg.author.id;
       if(!magicMembers.hasOwnProperty(id)){
@@ -555,69 +539,83 @@ client.on('message',async msg => {
       if(tokens[1] === "save"){
         writeToJSON(config.magicFile, magicMembers);
       }
-      console.log(magicMembers);
+      //console.log(magicMembers);
     }else if(tokens[0] === prefix + "love"){
+      if(redisConnected)redis.incr("love_command");
       const a ="💋 💋 💋 💋 💋 💋 💋 💋 💋 💋 💋 💌 💌 💌 💌 💌 💌 💌 💌 💌 💌 💌 💘 💘 💘 💘 💘 💘 💘 💘 💘 💘 💘 💝 💝 💝 💝 💝 💝 💝 💝 💝 💝 💝 💖 💖 💖 💖 💖 💖 💖 💖 💖 g 💖 💗 💗 💗 💗     💗 💗 💗 💗 💗 💗 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💞 💞 💞 💞 💞 💞💞 💞 💞 💞 💕 💕 💕 💕 💕 💕 💕 💕 💕 💕 💕 💟 💟 💟 💟 💟 💟 💟 💟 💟 💟 ❣ ❣ ❣ ❣ ❣ ❣ ❣ ❣ 💔 💔 💔 💔 💔     💔 💔 💔 💔 💔 💔 🔥 🔥 ⊛"
       b = a.split(" ");
       msg.channel.send(b[Math.floor(Math.random()*b.length)]);
-    }else if(tokens[0] === prefix+"room_for_user"){
-      if(msg.channel.type==="text" && msg.author.id === msg.guild.ownerID){
-        if(config.create_roomVoiceChannel){
-          config.create_roomVoiceChannel = 0;
-        }else{
-          var channel = msg.guild.channels.cache.array().filter(ch => ch.name === tokens[1]);
-          if(channel.length===1){
-            channel = channel[0];
-            config.create_roomVoiceChannel = channel.id;
-          }else{
-            msg.channel.send("Invalid channel");
-          }
-          console.log(channel);
-        }
-      }else{
-        msg.channel.send("You don't have permission for this command");
-      }
     }else if(tokens[0]===prefix+"clean"){
+      if(redisConnected)redis.incr("clean_command");
       var n = Number(tokens[1]);
       if(tokens[1] !=null){
         n=(n?n>100?100:n:1);
         msg.channel.bulkDelete(n, true);
       } 
     }else if(tokens[0]===prefix+"alarms"){
-      if(tokens.length===3){
-        var hours = tokens[1].replace(/[a-zA-Z\W_]+/gi,"");
-        var often = tokens[2].replace(/[a-zA-Z\W_]+/gi,"");
-        //console.log(`${hours} hours, ${often} often in mins`);
-        if(!hours || !often){
-          msg.channel.send("Wrong args...dear((");
-          return;
+      if(msg.channel.type==="dm"){
+        if(redisConnected)redis.incr("alarms_command");
+        if(tokens.length>=3){
+          var hours = tokens[1].replace(/[a-zA-Z\W_]+/gi,"");
+          var often = tokens[2].replace(/[a-zA-Z\W_]+/gi,"");
+          //console.log(`${hours} hours, ${often} often in mins`);
+          if(!hours || !often){
+            msg.channel.send("Wrong args...dear((");
+            return;
+          }
+          var id=msg.author.id;
+          alarmsMembers[id]={"times": Math.floor(hours*60/often), "minBeforeSignal":often, "often":often, "message":(tokens.length>3?msg.content.split(" ").slice(3).join(' '):"Hello my dear, this a default reminder for you to have a pause in what you are doing")};
+          //console.log(alarmsMembers[id]);
+          msg.channel.send("Got it");
+        }else if(tokens.length===2 && tokens[1]==="off"){
+          delete alarmsMembers[msg.author.id];
+          msg.channel.send("removed from the stack");
+        }else{
+          msg.channel.send("Invalid args...dear(\n//use it in direct messages, bot sends you in DM your custom message or default message every <number of minutes> during some <number of hours> you mentioned");
         }
-        var id=msg.author.id;
-        alarmsMembers[id]={"times": Math.floor(hours*60/often), "minBeforeSignal":often, "often":often};
-        console.log(alarmsMembers[id]);
-      }else if(tokens.length===2 && tokens[1]==="off"){
-        delete alarmsMembers[msg.author.id];
+        //console.log(msg.author.id);
       }else{
-        msg.channel.send("Invalid args...dear(");
+        if(redisConnected)redis.incr("else_statement_reached_command");
+        msg.channel.send("My dear, you can only use this command in direct messages, so don't interupt others)thank you");
       }
+    }else if(tokens[0]===prefix+"create_room"){
+        if(redisConnected)redis.incr("create_room_command");
+        //redis.containsInList("create_room_channels", newS.channelID).then(r=>{
+        //redis.containsInList("tempVoiceChannelIDs", old.channel.id).then(r=>{
+        //console.log(tokens[1])
+        let channels=msg.guild.channels.cache.array().filter(c =>c.name === msg.content.split(" ").slice(1).join(" "))
+        if(channels.length!=1 || channels[0].type!=="voice" || msg.member.hasPermission("MANAGE_CHANNELS")===false){
+          msg.channel.send("Invalid channel(one channel case sensative name, type === voice, manage channels permission)");
+          return
+        }else{
+          redis.containsInList("create_room_channels", channels[0].id).then(r=>{
+              if(r===null){
+                redis.pushToList("create_room_channels", channels[0].id);  
+                msg.channel.send("Pushed to the stack(didn't check promise)");
+              }else{
+                redis.removeFromList("create_room_channels", channels[0].id);
+                msg.channel.send("Poped out from the stack(didn't check promise)");
+              }
+            });
+        }
+    }else{
+
+      msg.channel.send("I see that you trying to talk to me, but I'm talking in JS and you are in C++");
     }//next command
     
   }
-
-
   if(msg.channel.type === "text" && !msg.author.equals(client.user) && msg.mentions.members.array().length > 0){
     //console.log(msg.author.id + " " + msg.author.discriminator + " "); 
     const mentionedIDs = msg.mentions.members.array();
-    let rawdata = fs.readFileSync('autoreply.json');
-    let ARusers = JSON.parse(rawdata);
     for(let i=0; i < mentionedIDs.length; i+=1){
       const userID = mentionedIDs[i].user.id;
-      //console.log(userID+ " in the log? " + ARusers.users.hasOwnProperty(userID));
-      if(ARusers.users.hasOwnProperty(userID)){
-        if(ARusers.users[userID].status === "on"){
-           msg.reply("Autoreply from " + mentionedIDs[i].user.username + ":\n" + ARusers.users[userID].message); 
-        }
-      }
+      redis.containsInList("autoreply", userID).then(r=>{
+            if(r!==null){
+              redis.getValueP(userID+"_autoreply").then(r=>{
+                    msg.channel.send( "Autoreply from " + mentionedIDs[i].user.username + ":\n" + r);
+                  });
+            }
+          });
     }
   }
 
