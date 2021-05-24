@@ -9,6 +9,7 @@ const request = require('request')
 const { exec } = require("child_process");
 
 const redis=require( './connectRedis.js');
+const divideusTest=require("./divideusTest.js");
 //Notes:
 //811122416754622514 - 2Astana
 //
@@ -275,9 +276,9 @@ client.on('voiceStateUpdate', (oldS, newS) =>{
         if(r!==null){
           redis.incr("create_room_channels_created");
           newS.channel.clone({"name":(newS.member.nickname?newS.member.nickname:newS.member.user.username) + "'s room"}).then(guildCh =>{
-          redis.pushToList("tempVoiceChannelIDs", guildCh.id);
-          guildCh.overwritePermissions([{id:newS.member.user.id, allow: ["MOVE_MEMBERS","KICK_MEMBERS", "ADMINISTRATOR", "MANAGE_CHANNELS"]}]);
-          newS.member.edit({"channel":guildCh.id});
+            redis.pushToList("tempVoiceChannelIDs", guildCh.id);
+            guildCh.overwritePermissions([{id:newS.member.user.id, allow: ["MOVE_MEMBERS","KICK_MEMBERS", "ADMINISTRATOR", "MANAGE_CHANNELS"]}]);
+            newS.member.edit({"channel":guildCh.id});
           });
         }
   });
@@ -598,10 +599,19 @@ client.on('message',async msg => {
               }
             });
         }
-    }else{
-
-      msg.channel.send("I see that you trying to talk to me, but I'm talking in JS and you are in C++");
     }//next command
+    else if(tokens[0]===prefix+"divideus"){
+      if(tokens.length>1){
+        var users=msg.channel.members
+        var groups=tokens.slice(1)
+        var channel=msg.guild.members.fetch(msg.author.id).voice.channel
+        divideusTest.divideUs(users.groups, channel, redis, msg)
+      }else{
+        msg.channel.send("Invalid args")
+      }
+    }else{
+      msg.channel.send("I see that you trying to talk to me, but I'm talking in JS and you are in C++");
+    }
     
   }
   if(msg.channel.type === "text" && !msg.author.equals(client.user) && msg.mentions.members.array().length > 0){
