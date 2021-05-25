@@ -32,6 +32,7 @@ There is 5 conditions you need to keep in mind:
 [prefix]room_for_user <name of the voice channel> //deprecated
 [prefix]alarms <number of hours> <number of minutes> [you message(optional)] use it in direct messages, bot sends you in DM your custom message or default message every <number of minutes> during some <number of hours> you mentioned
 [prefix]create_room <Name of channel (case sensitive)> //when user enters this channel bot creates a separate voice channel, moves him/her to the new room, if room ends on \"s room\" and has no users in it bot deletes the room
+[prefix]divideus <number of users in group 0> <n of users in next group> //divides members in a voice channel randomly by different temporary voice channels
 v0.03
 
 Thanks to Artur,Aman(they are real sweet hearts)
