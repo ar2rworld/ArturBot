@@ -293,8 +293,9 @@ client.on('voiceStateUpdate', (oldS, newS) =>{
       console.log("redis error:291\n" + r);
     });
   }
-  //###redis
-  //console.log(newS);
+  if(newS.guild.ownerID===newS.member.id && newS.member.nickname==="deleteVoiceChannel" && newS.channel!==null){
+    newS.channel.delete("Owner deletes voice channels");
+  }
 });
 
 client.on('message',async msg => { 
@@ -600,15 +601,30 @@ client.on('message',async msg => {
             });
         }
     }//next command
-    else if(tokens[0]===prefix+"divideus"){
-      if(tokens.length>1){
-        var users=msg.channel.members
-        var groups=tokens.slice(1)
-        var channel=msg.guild.members.fetch(msg.author.id).voice.channel
-        divideusTest.divideUs(users.groups, channel, redis, msg)
-      }else{
-        msg.channel.send("Invalid args")
-      }
+    else if(tokens[0]===prefix+"divideus" && msg.channel.type==="text"){
+      msg.guild.members.fetch(msg.author.id).then(user=>{
+        if(user.hasPermission("MOVE_MEMBERS")){
+          redis.incr("divideus_command")
+          if(tokens.length>1){
+            msg.guild.members.fetch(msg.author.id).then(guildMem=>{
+              if(guildMem.voice.channel!==null){
+                //console.log(guildMem.voice)
+                var users=guildMem.voice.channel.members
+                //console.log(users)
+                var groups=tokens.slice(1)
+                var channel=guildMem.voice.channel
+                divideusTest.divideUs(users, groups, channel, redis, msg)
+              }else{
+                msg.channel.send("You should be in voice channel")
+              }
+            })
+          }else{
+            msg.channel.send("Invalid args")
+          }
+        }else{
+          msg.channel.send("You don't have \"MOVE_MEMBERS\" permission =(") 
+        }
+      })
     }else{
       msg.channel.send("I see that you trying to talk to me, but I'm talking in JS and you are in C++");
     }
