@@ -623,11 +623,15 @@ client.on('message',async msg => {
         }
         break;
     case prefix+"divideus":
+      //return msg.channel.send('Error occured')
       if(tokens.length>1){
-        var users=msg.channel.members
-        var groups=tokens.slice(1)
-        var channel=msg.guild.members.fetch(msg.author.id).voice.channel
-        divideusTest.divideUs(users.groups, channel, redis, msg)
+          var users=msg.channel.members
+          var groups=tokens.slice(1)
+          var channel=msg.member.voice.channel
+          if(channel !== null)
+            divideusTest.divideUs(users, groups, channel, redis, msg)
+          else
+            return msg.channel.send('You should be in the voice channel to use this command')
       }else{
         msg.channel.send("Invalid args")
       }

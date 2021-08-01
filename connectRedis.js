@@ -4,8 +4,9 @@ const client = redis.createClient({
   port: 6379,
 });
 client.on('error', err => {
-  console.log('Error ' + err);
+  console.log('RedisError ' + err);
 });
+//incr
 module.exports ={
   incr:(key)=>{
          client.incr(key);
@@ -18,10 +19,6 @@ module.exports ={
         }
         //console.log(reply);
         return reply;
-        //client.get('foe', (err, reply) => {
-        //    if (err) throw err;
-        //    console.log(reply);
-        //});
     });
   },
   getValue:(key)=>{
