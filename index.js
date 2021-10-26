@@ -260,7 +260,9 @@ client.on('ready', () => {
     exec("free -m", (error, stdout, stderr) =>{
     if(!error){
       let out=stdout.split("         ");
+      //let act=(out.slice(3,5) + "~"+ out.slice(9,11))
       let act=(out.slice(3,5) + "~"+ out.slice(9,11))
+      //console.log(out)
       client.user.setActivity(act+"/r"+(redisConnected?"+":"-"), {type : "PLAYING"})
     }
   })
@@ -302,13 +304,16 @@ client.on('message',async msg => {
   const inp = msg.content.toLowerCase();
   if(inp.startsWith(prefix)){ 
     var tokens = inp.split(" ");
-    if(tokens[0] === prefix+"help"){
+    switch(tokens[0]){
+    case prefix+"help":
       if(redisConnected)redis.incr("help_command");
       msg.reply(help);
-    }else if(tokens[0] === prefix+"changeava"){
+      break;
+    case prefix+"changeava":
       if(redisConnected)redis.incr("changeave_command");
       client.user.setAvatar('https://random-d.uk/api/randomimg').then(msg.reply('Image is set, my friend, it is always good to have something dynemic =)')).catch(console.error);
-    }else if(tokens[0] === prefix+"isthebest"){
+      break;
+    case prefix+"isthebest":
       if(redisConnected)redis.incr("isthebest_command");
       const tempInp = inp.split(' ');
       if(tempInp.length === 2){
@@ -319,7 +324,8 @@ client.on('message',async msg => {
       }else{
         msg.reply("My dear, can you please use exactly one argument for this command? Check out help: "+ prefix + "help");
       }
-    }else if(tokens[0] === prefix+"number"){
+      break;
+    case prefix+"number":
       if(redisConnected)redis.incr("number_command");
       const tempArgs = inp.split(' ');
       if(gameStatus){
@@ -354,14 +360,16 @@ client.on('message',async msg => {
         gameStatus = true;
         msg.reply("Game started, enter !@number <your number>\nI will say if it is bigger or smaller\nrange(0, 99)");
       }
-    }else if(tokens[0] === prefix+"match"){
+      break;
+    case  prefix+"match":
       if(tokens.length > 2){
         const val = getASCIIsum(tokens.slice(1).join("")) % 100;
         msg.reply((val > 35?"OH, You guys have a chance of " + val + "%." : "Sorry, you chances as low as " + val + "% but never give up!")); 
       }else{
         msg.reply("Oh brother/sister/both, can you please provide me at least two arguments: !@match <name1> <name2> ...");
       }
-    }else if(tokens[0] === prefix+"happy-birthday"){
+      break;
+    case prefix+"happy-birthday":
       //https://www.youtube.com/watch?v=ORCqbKG4Z0M
       const temp = tokens;
       if(temp.length === 2){
@@ -369,7 +377,8 @@ client.on('message',async msg => {
       }else{
         msg.reply("Invalid input: !@happy-birthday <name>");
       }
-    }else if(tokens[0] === prefix+"autoreply"){
+      break;
+    case prefix+"autoreply":
       if(redisConnected)redis.incr("autoreply_command");
       //console.log(msg.author.id + " " + msg.author.username);
       if(redisConnected){
@@ -405,7 +414,8 @@ client.on('message',async msg => {
       }else{
         msg.channel.send("redis disconnected(");
       }
-    }else if(tokens[0] === prefix+"meme"){
+      break;
+    case  prefix+"meme":
       if(redisConnected)redis.incr("meme_command");
       if(msg.attachments.array().length>0 || tokens.length > 1){
       const atts = msg.attachments.array();
@@ -442,72 +452,80 @@ client.on('message',async msg => {
             }
         });
       }
-    }else if(tokens[0] === prefix+"rip"){
+      break;
+    case prefix+"rip":
       if(redisConnected)redis.incr("rip_command");
       msg.channel.send("Death is worth living, and love is worth the wait!\n@V. Tsoy");
-    }
-    else if(tokens[0] === prefix+config.memberVoiceKick && magicEnabledServer){
-      var members = msg.mentions.members.array();
-      if(members.length>0){
-        for(let i=0; i<members.length; i+=1){
-          console.log(members[i].voice.channelID+"\n" +  msg.member.voice.channelID);
-          if(members[i].voice.channelID!=null && msg.member.voice.channelID!=null){
-            if(members[i].voice.channelID === msg.member.voice.channelID && members[i].voice.channel.equals(msg.member.voice.channel)){//&& members[i].voice.channel.equals(msg.member.voice.channel)){
-              const check = checkMemberMagic(msg,config.memberVoiceKick, members[i].id);
-              if(!check){
-                console.log("->" + members[i].user.username + " kicked out");
-                members[i].voice.kick();
+      break;
+    case prefix+config.memberVoiceKick:
+      if(magicEnabledServer){
+        var members = msg.mentions.members.array();
+        if(members.length>0){
+          for(let i=0; i<members.length; i+=1){
+            console.log(members[i].voice.channelID+"\n" +  msg.member.voice.channelID);
+            if(members[i].voice.channelID!=null && msg.member.voice.channelID!=null){
+              if(members[i].voice.channelID === msg.member.voice.channelID && members[i].voice.channel.equals(msg.member.voice.channel)){//&& members[i].voice.channel.equals(msg.member.voice.channel)){
+                const check = checkMemberMagic(msg,config.memberVoiceKick, members[i].id);
+                if(!check){
+                  console.log("->" + members[i].user.username + " kicked out");
+                  members[i].voice.kick();
+                }else{
+                  msg.channel.send(check);
+                }
               }else{
-                msg.channel.send(check);
+                msg.channel.send(`${members[i].user.username} is not in the voice channel with you`);
               }
             }else{
-              msg.channel.send(`${members[i].user.username} is not in the voice channel with you`);
+              msg.channel.send(`${members[i].user.username} or you is not in the voice channel`);
             }
-          }else{
-            msg.channel.send(`${members[i].user.username} or you is not in the voice channel`);
           }
         }
       }
-    }
-    else if(tokens[0] === prefix+config.memberVoiceMute && magicEnabledServer){
-      var members = msg.mentions.members.array();
-      if(members.length>0){
-        for(let i=0; i<members.length; i+=1){
-          console.log(members[i].voice.channelID+"\n" +  msg.member.voice.channelID);
-          if(members[i].voice.channelID!=null && msg.member.voice.channelID!=null){
-            if(members[i].voice.channelID === msg.member.voice.channelID && members[i].voice.channel.equals(msg.member.voice.channel)){//&& members[i].voice.channel.equals(msg.member.voice.channel)){
-              const check = checkMemberMagic(msg,config.memberVoiceMute, members[i].id);
-              if(!check){
-                console.log("->" + members[i].user.username + " muted");
-                members[i].voice.setMute(true);
+      break;
+    case prefix+config.memberVoiceMute:
+      if(magicEnabledServer){
+        var members = msg.mentions.members.array();
+        if(members.length>0){
+          for(let i=0; i<members.length; i+=1){
+            console.log(members[i].voice.channelID+"\n" +  msg.member.voice.channelID);
+            if(members[i].voice.channelID!=null && msg.member.voice.channelID!=null){
+              if(members[i].voice.channelID === msg.member.voice.channelID && members[i].voice.channel.equals(msg.member.voice.channel)){//&& members[i].voice.channel.equals(msg.member.voice.channel)){
+                const check = checkMemberMagic(msg,config.memberVoiceMute, members[i].id);
+                if(!check){
+                  console.log("->" + members[i].user.username + " muted");
+                  members[i].voice.setMute(true);
+                }else{
+                  msg.channel.send(check);
+                }
               }else{
-                msg.channel.send(check);
+                msg.channel.send(`${members[i].user.username} is not in the voice channel with you`);
               }
-            }else{
-              msg.channel.send(`${members[i].user.username} is not in the voice channel with you`);
-            }
-        }else{
-            msg.channel.send(`${members[i].user.username} or you is not in the voice channel`);
+          }else{
+                msg.channel.send(`${members[i].user.username} or you is not in the voice channel`);
+          }
+        }
         }
       }
-    }
-    }
-    else if(tokens[0] === prefix+config.memberVoiceUnmute && magicEnabledServer){
-      var members = msg.mentions.members.array();
-      if(members.length>0){
-        for(let i=0; i<members.length; i+=1){
-          console.log(members[i].voice.channelID+"\n" +  msg.member.voice.channelID);
-              const check = checkMemberMagic(msg,config.memberVoiceUnmute, members[i].id);
-              if(!check){
-                console.log("->" + members[i].user.username + " unmuted");
-                members[i].voice.setMute(false);
-              }else{
-                msg.channel.send(check);
-              }
+      break;
+    case prefix+config.memberVoiceUnmute:
+      if(magicEnabledServer){
+        var members = msg.mentions.members.array();
+        if(members.length>0){
+          for(let i=0; i<members.length; i+=1){
+            console.log(members[i].voice.channelID+"\n" +  msg.member.voice.channelID);
+                const check = checkMemberMagic(msg,config.memberVoiceUnmute, members[i].id);
+                if(!check){
+                  console.log("->" + members[i].user.username + " unmuted");
+                  members[i].voice.setMute(false);
+                }else{
+                  msg.channel.send(check);
+                }
+        }
+        msg.member.voice.setMute(false);
+        }
       }
-      msg.member.voice.setMute(false);
-      }
-    }else if(tokens[0] === prefix+"magic"){
+      break;
+    case prefix+"magic":
       if(redisConnected)redis.incr("magic_command");
       var out="";
       var id = msg.author.id;
@@ -541,19 +559,22 @@ client.on('message',async msg => {
         writeToJSON(config.magicFile, magicMembers);
       }
       //console.log(magicMembers);
-    }else if(tokens[0] === prefix + "love"){
+      break;
+    case prefix + "love":
       if(redisConnected)redis.incr("love_command");
       const a ="💋 💋 💋 💋 💋 💋 💋 💋 💋 💋 💋 💌 💌 💌 💌 💌 💌 💌 💌 💌 💌 💌 💘 💘 💘 💘 💘 💘 💘 💘 💘 💘 💘 💝 💝 💝 💝 💝 💝 💝 💝 💝 💝 💝 💖 💖 💖 💖 💖 💖 💖 💖 💖 g 💖 💗 💗 💗 💗     💗 💗 💗 💗 💗 💗 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💓 💞 💞 💞 💞 💞 💞💞 💞 💞 💞 💕 💕 💕 💕 💕 💕 💕 💕 💕 💕 💕 💟 💟 💟 💟 💟 💟 💟 💟 💟 💟 ❣ ❣ ❣ ❣ ❣ ❣ ❣ ❣ 💔 💔 💔 💔 💔     💔 💔 💔 💔 💔 💔 🔥 🔥 ⊛"
       b = a.split(" ");
       msg.channel.send(b[Math.floor(Math.random()*b.length)]);
-    }else if(tokens[0]===prefix+"clean"){
+      break;
+    case prefix+"clean":
       if(redisConnected)redis.incr("clean_command");
       var n = Number(tokens[1]);
       if(tokens[1] !=null){
         n=(n?n>100?100:n:1);
         msg.channel.bulkDelete(n, true);
-      } 
-    }else if(tokens[0]===prefix+"alarms"){
+      }
+      break;
+    case prefix+"alarms":
       if(msg.channel.type==="dm"){
         if(redisConnected)redis.incr("alarms_command");
         if(tokens.length>=3){
@@ -579,7 +600,8 @@ client.on('message',async msg => {
         if(redisConnected)redis.incr("else_statement_reached_command");
         msg.channel.send("My dear, you can only use this command in direct messages, so don't interupt others)thank you");
       }
-    }else if(tokens[0]===prefix+"create_room"){
+      break;
+    case prefix+"create_room":
         if(redisConnected)redis.incr("create_room_command");
         //redis.containsInList("create_room_channels", newS.channelID).then(r=>{
         //redis.containsInList("tempVoiceChannelIDs", old.channel.id).then(r=>{
@@ -599,21 +621,25 @@ client.on('message',async msg => {
               }
             });
         }
-    }//next command
-    else if(tokens[0]===prefix+"divideus"){
+        break;
+    case prefix+"divideus":
+      //return msg.channel.send('Error occured')
       if(tokens.length>1){
-        var users=msg.channel.members
-        var groups=tokens.slice(1)
-        var channel=msg.guild.members.fetch(msg.author.id).voice.channel
-        divideusTest.divideUs(users.groups, channel, redis, msg)
+          var users=msg.channel.members
+          var groups=tokens.slice(1)
+          var channel=msg.member.voice.channel
+          if(channel !== null)
+            divideusTest.divideUs(users, groups, channel, redis, msg)
+          else
+            return msg.channel.send('You should be in the voice channel to use this command')
       }else{
         msg.channel.send("Invalid args")
       }
-    }else{
-      msg.channel.send("I see that you trying to talk to me, but I'm talking in JS and you are in C++");
-    }
-    
+      break;
+    default:
+      msg.channel.send("I see that you trying to talk to me, but I'm talking in JS and you are in C++");    
   }
+}
   if(msg.channel.type === "text" && !msg.author.equals(client.user) && msg.mentions.members.array().length > 0){
     //console.log(msg.author.id + " " + msg.author.discriminator + " "); 
     const mentionedIDs = msg.mentions.members.array();
