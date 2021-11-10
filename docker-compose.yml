@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  node:
+    build: .
+    environment:
+      - redis_host=${redis_host}
+      - redis_port=${redis_port_container}
+    depends_on:
+      - redis
+  redis:
+    image: redis:6
+    ports: 
+      - "${redis_port}:${redis_port_container}"
+    volumes:
+      - "${redis_volume}:/data"
+

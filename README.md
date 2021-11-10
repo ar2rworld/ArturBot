@@ -79,6 +79,22 @@ There is 5 conditions you need to keep in mind:
 nodemon index.js
 ```
 
+## Docker
+
+### Add ```.env``` file like:
+```
+redis_host=[host in network, "redis" in this case]
+redis_port=[port to expose redis locally]
+redis_port_container=6379
+redis_volume=path/to/volume
+```
+### and ```config.json``` file with discord token
+
+### Compose command
+```bash
+docker-compose --env-file .env -d up
+```
+
 v0.03
 
 Thanks to Artur,Aman(they are real sweet hearts)
