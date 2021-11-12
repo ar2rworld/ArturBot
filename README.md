@@ -92,7 +92,7 @@ redis_volume=path/to/volume
 
 ### Compose command
 ```bash
-docker-compose --env-file .env -d up
+docker-compose --env-file .env up -d
 ```
 
 v0.03
